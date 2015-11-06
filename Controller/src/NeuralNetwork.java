@@ -1,5 +1,6 @@
-/* Maurits commentaar  hehehe */
-import cicontest.torcs.client.SensorModel;
+
+/* Maurits commentaar Jorg */
+
 
 public class NeuralNetwork {
 
