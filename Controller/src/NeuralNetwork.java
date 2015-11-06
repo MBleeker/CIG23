@@ -1,3 +1,4 @@
+/* Maurits commentaar */
 import cicontest.torcs.client.SensorModel;
 
 public class NeuralNetwork {
