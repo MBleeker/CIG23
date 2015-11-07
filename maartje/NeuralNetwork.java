@@ -26,7 +26,18 @@ public class NeuralNetwork {
 	 */
 	public void buildInputLayer(int numberOfNeurons) {		
 		NetworkLayer newInputLayer = new NetworkLayer(numberOfNeurons, 1);
-		this.inputLayer = newInputLayer;			
+		
+		/* Assume that there can only be one input layer */
+		if (this.hiddenLayer != null) {
+			newInputLayer.setNextLayer(this.hiddenLayer);
+		}
+		
+		else if (this.outputLayer != null) {
+			newInputLayer.setNextLayer(this.outputLayer);
+		}
+		
+		this.inputLayer = newInputLayer;		
+		
 	}
 	
 	/*
@@ -35,6 +46,17 @@ public class NeuralNetwork {
 	 */
 	public void buildHiddenLayer(int numberOfNeurons) {
 		NetworkLayer newHiddenLayer = new NetworkLayer(numberOfNeurons, 2);
+		
+		/* Assume that every new hidden layer is positioned after an already
+		 * existing one (except for the first one) */
+		if (this.hiddenLayer != null) {
+			newHiddenLayer.setPreviousLayer(this.hiddenLayer);
+		}
+		
+		if (this.outputLayer != null) {
+			newHiddenLayer.setNextLayer(this.outputLayer);
+		}
+		
 		this.hiddenLayer = newHiddenLayer;
 	}
 	
@@ -44,6 +66,15 @@ public class NeuralNetwork {
 	 */
 	public void buildOutputLayer(int numberOfNeurons) {
 		NetworkLayer newOutputLayer = new NetworkLayer(numberOfNeurons, 3);
+		
+		if (this.hiddenLayer != null) {
+			newOutputLayer.setPreviousLayer(this.hiddenLayer);
+		}
+		
+		else if (this.inputLayer != null) {
+			newOutputLayer.setPreviousLayer(this.inputLayer);
+		}
+		
 		this.outputLayer = newOutputLayer; 
 	}
 	
