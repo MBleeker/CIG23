@@ -9,9 +9,42 @@ import cicontest.torcs.client.SensorModel;
  */
 public class NeuralNetwork {
 	
-	public void newLayer(int numberOfNeurons) {
+	/*
+	 * Constructor
+	 */
+	public NeuralNetwork(){
+		
+	}
 	
-		networkLayer layer = new networkLayer(numberOfNeurons);
+	NetworkLayer inputLayer;
+	NetworkLayer hiddenLayer;
+	NetworkLayer outputLayer;
+	
+	/*
+	 * Method to construct an input layer
+	 * @param numberOfNeurons the number of Neurons the layer contains
+	 */
+	public void buildInputLayer(int numberOfNeurons) {		
+		NetworkLayer newInputLayer = new NetworkLayer(numberOfNeurons, 1);
+		this.inputLayer = newInputLayer;			
+	}
+	
+	/*
+	 * Method to construct a hidden layer
+	 * @param numberOfNeurons the number of Neurons the layer contains
+	 */
+	public void buildHiddenLayer(int numberOfNeurons) {
+		NetworkLayer newHiddenLayer = new NetworkLayer(numberOfNeurons, 2);
+		this.hiddenLayer = newHiddenLayer;
+	}
+	
+	/*
+	 * Method to construct an output layer
+	 * @param numberOfNeurons the number of Neurons the layer contains
+	 */
+	public void buildOutputLayer(int numberOfNeurons) {
+		NetworkLayer newOutputLayer = new NetworkLayer(numberOfNeurons, 3);
+		this.outputLayer = newOutputLayer; 
 	}
 	
 }

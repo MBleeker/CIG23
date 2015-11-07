@@ -1,19 +1,24 @@
-class networkLayer {
+class NetworkLayer {
 	
 	int numberOfNeurons;
+	int layerType;
 	
 	/* 
 	 * Constructor
 	 */
-	public networkLayer(){
+	public NetworkLayer(){
 		this.numberOfNeurons = 5;
 	}
 	
 	/*
 	 * Constructor
+	 * @param numberOfNeurons 
+	 * @param layerType 1: input, 2: hidden, 3: output
 	 */
-	public networkLayer(int numberOfNeurons) {
+	public NetworkLayer(int numberOfNeurons, int layerType) {
 		this.numberOfNeurons = numberOfNeurons;
+		this.layerType = layerType;
 	}
 	
+
 }
