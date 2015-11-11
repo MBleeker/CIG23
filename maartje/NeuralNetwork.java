@@ -1,4 +1,9 @@
-import cicontest.torcs.client.SensorModel;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import Jama.Matrix;
 
 /*
  * Class to implement the feed forward neural network that is 
@@ -7,7 +12,14 @@ import cicontest.torcs.client.SensorModel;
  * and one output node. The network is trained using
  * backpropagation. 
  */
-public class NeuralNetwork {
+public class NeuralNetwork implements Serializable {
+	
+	private static final long serialVersionUID = 100000000000001L;
+	
+	public static class WrongBuildSequence extends Exception implements Serializable {
+		
+		private static final long serialVersionUID = 200000000000001L;
+	}
 	
 	/*
 	 * Constructor
@@ -16,27 +28,20 @@ public class NeuralNetwork {
 		
 	}
 	
-	NetworkLayer inputLayer;
-	NetworkLayer hiddenLayer;
-	NetworkLayer outputLayer;
+	NetworkLayer inputLayer = null;
+	NetworkLayer outputLayer = null;
+	
+	protected List<NetworkLayer> allLayers = new ArrayList<NetworkLayer>();
 	
 	/*
 	 * Method to construct an input layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	public void buildInputLayer(int numberOfNeurons) {		
-		NetworkLayer newInputLayer = new NetworkLayer(numberOfNeurons, 1);
+	public void buildInputLayer(int numberOfNeurons, String actFunction) {		
+		NetworkLayer newInputLayer = new NetworkLayer(numberOfNeurons, 1, actFunction);
 		
-		/* Assume that there can only be one input layer */
-		if (this.hiddenLayer != null) {
-			newInputLayer.setNextLayer(this.hiddenLayer);
-		}
-		
-		else if (this.outputLayer != null) {
-			newInputLayer.setNextLayer(this.outputLayer);
-		}
-		
-		this.inputLayer = newInputLayer;		
+		this.inputLayer = newInputLayer;	
+		this.allLayers.add(this.inputLayer);
 		
 	}
 	
@@ -44,40 +49,89 @@ public class NeuralNetwork {
 	 * Method to construct a hidden layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	public void buildHiddenLayer(int numberOfNeurons) {
-		NetworkLayer newHiddenLayer = new NetworkLayer(numberOfNeurons, 2);
+	public void buildHiddenLayer(int numberOfNeurons, String actFunction) throws WrongBuildSequence {
+		NetworkLayer newHiddenLayer = new NetworkLayer(numberOfNeurons, 2, actFunction);
 		
 		/* Assume that every new hidden layer is positioned after an already
 		 * existing one (except for the first one) */
-		if (this.hiddenLayer != null) {
-			newHiddenLayer.setPreviousLayer(this.hiddenLayer);
+		
+		if (this.allLayers.isEmpty()) {
+			// throw exception because you first have to construct the 
+			// input layer
+			throw new WrongBuildSequence();
+		}
+		else {
+			newHiddenLayer.setPreviousLayer(this.allLayers.get(this.allLayers.size()-1) );
 		}
 		
-		if (this.outputLayer != null) {
-			newHiddenLayer.setNextLayer(this.outputLayer);
-		}
-		
-		this.hiddenLayer = newHiddenLayer;
+		// first initialize the weights
+		// then set the forward pointer in the previous layer
+		newHiddenLayer.initializeWeightMatrix();
+		this.setNextLayerInPreviousLayer(newHiddenLayer);
+		this.allLayers.add(newHiddenLayer);
 	}
 	
+
 	/*
 	 * Method to construct an output layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	public void buildOutputLayer(int numberOfNeurons) {
-		NetworkLayer newOutputLayer = new NetworkLayer(numberOfNeurons, 3);
+	public void buildOutputLayer(int numberOfNeurons, String actFunction) throws WrongBuildSequence {
+		NetworkLayer newOutputLayer = new NetworkLayer(numberOfNeurons, 3, actFunction);
 		
-		if (this.hiddenLayer != null) {
-			newOutputLayer.setPreviousLayer(this.hiddenLayer);
+		if (this.allLayers.isEmpty()) {
+			// throw exception because you first have to construct the 
+			// input layer
+			throw new WrongBuildSequence();
+		}
+		else {
+			newOutputLayer.setPreviousLayer(this.allLayers.get(this.allLayers.size()-1) );
 		}
 		
-		else if (this.inputLayer != null) {
-			newOutputLayer.setPreviousLayer(this.inputLayer);
-		}
-		
+		// first initialize the weights
+		// then set the forward pointer in the previous layer
+		newOutputLayer.initializeWeightMatrix();
 		this.outputLayer = newOutputLayer; 
+		this.allLayers.add(this.outputLayer);
 	}
 	
+	private void setNextLayerInPreviousLayer(NetworkLayer nl){
+		
+		if (!this.allLayers.isEmpty()) {
+			this.allLayers.get(this.allLayers.size()-1).setNextLayer(nl);
+		}
+		else
+		{ // must be first layer that we add therefore we can't assign
+		  // the "nextLayer" to the previous layer
+		}
+	}
+	
+	public List<NetworkLayer> getAllLayers() {
+		return allLayers;
+	}
+
+	public void processInput(Matrix inputVec) {
+		
+		// set output vector for input layer because we're not going
+		// to calculate the output for that layer
+		this.inputLayer.setOutputVector(inputVec);
+		
+		for (NetworkLayer aLayer : this.allLayers) {
+			if (aLayer.getWeightMatrix() != null) {
+				// get output of previous layer
+				System.out.println("Process input...");
+				//System.out.println("Weight matrix: ");
+				//System.out.println(Arrays.deepToString(aLayer.getWeightMatrix().getArray()));
+				
+				Matrix outputPrevLayer = this.allLayers.get(this.allLayers.indexOf(aLayer)-1).getOutputVector();
+				aLayer.calculateActivation(outputPrevLayer);
+				aLayer.calculateOutput();
+				System.out.println("Layer " + aLayer.getNumberOfNeurons());
+				System.out.println(Arrays.deepToString(aLayer.getActivationVector().getArray()));
+			}
+		}
+		
+	}
 }
 
 
