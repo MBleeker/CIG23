@@ -37,8 +37,8 @@ public class NeuralNetwork implements Serializable {
 	 * Method to construct an input layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	public void buildInputLayer(int numberOfNeurons) {		
-		NetworkLayer newInputLayer = new NetworkLayer(numberOfNeurons, 1);
+	public void buildInputLayer(int numberOfNeurons, String actFunction) {		
+		NetworkLayer newInputLayer = new NetworkLayer(numberOfNeurons, 1, actFunction);
 		
 		this.inputLayer = newInputLayer;	
 		this.allLayers.add(this.inputLayer);
@@ -49,8 +49,8 @@ public class NeuralNetwork implements Serializable {
 	 * Method to construct a hidden layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	public void buildHiddenLayer(int numberOfNeurons) throws WrongBuildSequence {
-		NetworkLayer newHiddenLayer = new NetworkLayer(numberOfNeurons, 2);
+	public void buildHiddenLayer(int numberOfNeurons, String actFunction) throws WrongBuildSequence {
+		NetworkLayer newHiddenLayer = new NetworkLayer(numberOfNeurons, 2, actFunction);
 		
 		/* Assume that every new hidden layer is positioned after an already
 		 * existing one (except for the first one) */
@@ -76,8 +76,8 @@ public class NeuralNetwork implements Serializable {
 	 * Method to construct an output layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	public void buildOutputLayer(int numberOfNeurons) throws WrongBuildSequence {
-		NetworkLayer newOutputLayer = new NetworkLayer(numberOfNeurons, 3);
+	public void buildOutputLayer(int numberOfNeurons, String actFunction) throws WrongBuildSequence {
+		NetworkLayer newOutputLayer = new NetworkLayer(numberOfNeurons, 3, actFunction);
 		
 		if (this.allLayers.isEmpty()) {
 			// throw exception because you first have to construct the 

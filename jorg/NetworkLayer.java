@@ -16,9 +16,10 @@ class NetworkLayer implements Serializable {
 	private Matrix weightMatrix;
 	private Matrix activationVector;
 	private Matrix outputVector;
-	
 	private NetworkLayer previousLayer;
 	private NetworkLayer nextLayer;
+	private String typeOfActFunction;
+	
 	
 	/*
 	 * Constructor
@@ -26,16 +27,21 @@ class NetworkLayer implements Serializable {
 	 * @param numberOfNeurons 
 	 * @param layerType 1: input, 2: hidden, 3: output
 	 */
-	public NetworkLayer(int numberOfNeurons, int layerType) {
+	public NetworkLayer(int numberOfNeurons, int layerType, String typeActFunc) {
 		this.numberOfNeurons = numberOfNeurons;
 		this.layerType = layerType;
 		this.previousLayer = null;
 		this.nextLayer = null;
 		this.activationVector = new Matrix(new double[numberOfNeurons], 1); 
 		this.outputVector = new Matrix(new double[numberOfNeurons], 1);
+		this.typeOfActFunction = typeActFunc;
 		
 	}
 	
+	public String getTypeOfActFunction() {
+		return typeOfActFunction;
+	}
+
 	public int getNumberOfNeurons() {
 		return numberOfNeurons;
 	}
@@ -121,7 +127,16 @@ class NetworkLayer implements Serializable {
 
 	    for (int i = 0; i < n; i++) {
 	        for (int j = 0; j<m; j++) {
-	             hx[i][j] = this.Tanh(hx[i][j]);
+	        	 switch (this.typeOfActFunction) {
+	        	 	case "tanh":
+	        	 		hx[i][j] = this.Tanh(hx[i][j]);
+	        	 		break;
+	        	 	case "sig":
+	        	 		hx[i][j] = this.SigmoidFunction(hx[i][j]);
+	        	 	default: 
+	        	 		hx[i][j] = this.Tanh(hx[i][j]);
+	        	 }
+	             
 	        }
 	    }
 	    this.outputVector = new Matrix(hx);
