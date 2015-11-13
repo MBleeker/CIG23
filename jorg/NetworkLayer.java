@@ -71,7 +71,11 @@ class NetworkLayer implements Serializable {
 	public Matrix getWeightMatrix() {
 		return weightMatrix;
 	}
-	
+
+	public void setWeightMatrix(Matrix s) {
+		this.weightMatrix = s;
+	}
+
 	public Matrix getActivationVector() {
 		return activationVector;
 	}
