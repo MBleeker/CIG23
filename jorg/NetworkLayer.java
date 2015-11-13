@@ -14,6 +14,7 @@ class NetworkLayer implements Serializable {
 	private int numberOfNeurons;
 	private int layerType;
 	private Matrix weightMatrix;
+	private Matrix inputVector;
 	private Matrix activationVector;
 	private Matrix outputVector;
 	private NetworkLayer previousLayer;
@@ -32,12 +33,21 @@ class NetworkLayer implements Serializable {
 		this.layerType = layerType;
 		this.previousLayer = null;
 		this.nextLayer = null;
+		this.inputVector = new Matrix(new double[numberOfNeurons], 1); 
 		this.activationVector = new Matrix(new double[numberOfNeurons], 1); 
 		this.outputVector = new Matrix(new double[numberOfNeurons], 1);
 		this.typeOfActFunction = typeActFunc;
 		
 	}
 	
+	public Matrix getInputVector() {
+		return inputVector;
+	}
+
+	public void setInputVector(Matrix inputVector) {
+		this.inputVector = inputVector;
+	}
+
 	public String getTypeOfActFunction() {
 		return typeOfActFunction;
 	}
@@ -113,10 +123,10 @@ class NetworkLayer implements Serializable {
 	
 	public void calculateActivation(Matrix input) {
 		
-		System.out.println("Weight dim " + this.getDimMatrix(this.getWeightMatrix()) );
-		System.out.println("Input dim " + this.getDimMatrix(input) );
+		System.out.println("Weight dim " + NetworkLayer.getDimMatrix(this.getWeightMatrix()) );
+		System.out.println("Input dim " + NetworkLayer.getDimMatrix(input) );
 		this.activationVector = this.getWeightMatrix().times(input);
-		System.out.println("Output dim " + this.getDimMatrix(this.activationVector) );
+		System.out.println("Output dim " + NetworkLayer.getDimMatrix(this.activationVector) );
 	}
 	
 	public void calculateOutput() {
@@ -129,12 +139,12 @@ class NetworkLayer implements Serializable {
 	        for (int j = 0; j<m; j++) {
 	        	 switch (this.typeOfActFunction) {
 	        	 	case "tanh":
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
+	        	 		hx[i][j] = NetworkLayer.Tanh(hx[i][j]);
 	        	 		break;
 	        	 	case "sig":
-	        	 		hx[i][j] = this.SigmoidFunction(hx[i][j]);
+	        	 		hx[i][j] = NetworkLayer.SigmoidFunction(hx[i][j]);
 	        	 	default: 
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
+	        	 		hx[i][j] = NetworkLayer.Tanh(hx[i][j]);
 	        	 }
 	             
 	        }
@@ -142,17 +152,17 @@ class NetworkLayer implements Serializable {
 	    this.outputVector = new Matrix(hx);
 	}
 	
-	protected double SigmoidFunction(double num){
+	public static double SigmoidFunction(double num){
 		
 		return 1.0 / (1.0 + Math.exp(-1.0 * num));
 	}
 	
-	protected double Tanh(double num) {
+	public static double Tanh(double num) {
 		final double result = (Math.exp(num*2.0)-1.0)/(Math.exp(num*2.0)+1.0);
 		return result;
 	}
 	
-	private String getDimMatrix(Matrix a) {
+	public static String getDimMatrix(Matrix a) {
 		
 		int M = a.getColumnDimension();
 		int N = a.getRowDimension();

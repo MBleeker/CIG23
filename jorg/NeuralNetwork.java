@@ -92,6 +92,7 @@ public class NeuralNetwork implements Serializable {
 		// then set the forward pointer in the previous layer
 		newOutputLayer.initializeWeightMatrix();
 		this.outputLayer = newOutputLayer; 
+		this.setNextLayerInPreviousLayer(newOutputLayer);
 		this.allLayers.add(this.outputLayer);
 	}
 	
@@ -114,15 +115,17 @@ public class NeuralNetwork implements Serializable {
 		
 		// set output vector for input layer because we're not going
 		// to calculate the output for that layer
+		this.inputLayer.setInputVector(inputVec);
 		this.inputLayer.setOutputVector(inputVec);
 		
 		for (NetworkLayer aLayer : this.allLayers) {
 			if (aLayer.getWeightMatrix() != null) {
 				// get output of previous layer
 				Matrix outputPrevLayer = this.allLayers.get(this.allLayers.indexOf(aLayer)-1).getOutputVector();
+				aLayer.setInputVector(outputPrevLayer);
 				aLayer.calculateActivation(outputPrevLayer);
 				aLayer.calculateOutput();
-				System.out.println("Layer " + aLayer.getNumberOfNeurons());
+				System.out.println("Layer # of units " + aLayer.getNumberOfNeurons());
 				System.out.println(Arrays.deepToString(aLayer.getActivationVector().getArray()));
 			}
 		}
