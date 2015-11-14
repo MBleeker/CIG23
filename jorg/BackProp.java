@@ -40,7 +40,7 @@ class BackProp {
 		// we omit the input layer by setting condition to i > 0.
 		for (int i = this.network.getAllLayers().size()-1; i > 0; i--) {
 			NetworkLayer aLayer = this.network.getAllLayers().get(i);
-			System.out.println("Backprop for layerType " + aLayer.getLayerType());
+			// System.out.println("Backprop for layerType " + aLayer.getLayerType());
 			getBackPropLayer(aLayer).computeDelta(this, this.target); // from now on every layer should have a delta (after the loop ofc)
 			getBackPropLayer(aLayer).updateWeightMatrix(this.learningRate);
 		}
@@ -49,7 +49,7 @@ class BackProp {
 
 	/* Returns the backproplayer that belongs to the network layer you feed */
 	public BackPropLayer getBackPropLayer(NetworkLayer aLayer) {
-		 
+
 		return this.trainingMap.get(aLayer);
 	}
 }

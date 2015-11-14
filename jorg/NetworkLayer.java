@@ -158,14 +158,14 @@ class NetworkLayer implements Serializable {
 	
 	public static double SigmoidFunction(double num){
 		
-		return 1.0 / (1.0 + Math.exp(-1.0 * num));
+		return 1.0 / (1.0 + BoundNumbers.exp(-1.0 * num));
 	}
 	
 	public static double Tanh(double num) {
-		final double result = (Math.exp(num*2.0)-1.0)/(Math.exp(num*2.0)+1.0);
+		final double result = (BoundNumbers.exp(num*2.0)-1.0)/(BoundNumbers.exp(num*2.0)+1.0);
 		return result;
 	}
-	
+
 	public static String getDimMatrix(Matrix a) {
 		
 		int M = a.getColumnDimension();

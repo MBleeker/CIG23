@@ -97,9 +97,10 @@ class BackPropLayer {
 	        for (int j = 0; j<m; j++) {
 	        	switch (this.aLayer.getTypeOfActFunction()) {
 	        		case "sig":
-	        			activation[i][j] = derivativeSigm(activation[i][j]);
+	        			activation[i][j] = derivativeSign(activation[i][j]);
 	        			break;
 	        		case "tanh":
+						activation[i][j] = derivativeTanh(activation[i][j]);
 	        			break;
 	        			//still need to write this
 	        		default:
@@ -112,9 +113,16 @@ class BackPropLayer {
 	    return new Matrix(activation);
 	}
 	
-	public double derivativeSigm(double num) {
+	public double derivativeSign(double num) {
 		// write the derivative function of the sigmoid here and return value (similar to normal function, only difference is derivative)
 			return NetworkLayer.SigmoidFunction(num)  * (1.0-NetworkLayer.SigmoidFunction(num));
+	}
+
+	public double derivativeTanh(double num) {
+		//
+		return ( 1.0-Math.pow(NetworkLayer.Tanh(num), 2.0) );
+
+
 	}
 }
 

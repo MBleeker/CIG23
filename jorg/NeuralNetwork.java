@@ -2,8 +2,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import java.io.*;
 import Jama.Matrix;
+import cicontest.torcs.client.SensorModel;
 
 /*
  * Class to implement the feed forward neural network that is 
@@ -30,9 +31,17 @@ public class NeuralNetwork implements Serializable {
 	
 	NetworkLayer inputLayer = null;
 	NetworkLayer outputLayer = null;
-	
+	private double learningRate = 0.001; // default value
 	protected List<NetworkLayer> allLayers = new ArrayList<NetworkLayer>();
-	
+
+	public double getLearningRate() {
+		return learningRate;
+	}
+
+	public void setLearningRate(double learningRate) {
+		this.learningRate = learningRate;
+	}
+
 	/*
 	 * Method to construct an input layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
@@ -111,7 +120,7 @@ public class NeuralNetwork implements Serializable {
 		return allLayers;
 	}
 
-	public void processInput(Matrix inputVec) {
+	public Matrix processInput(Matrix inputVec) {
 		
 		// set output vector for input layer because we're not going
 		// to calculate the output for that layer
@@ -125,21 +134,67 @@ public class NeuralNetwork implements Serializable {
 				aLayer.setInputVector(outputPrevLayer);
 				aLayer.calculateActivation(outputPrevLayer);
 				aLayer.calculateOutput();
-				System.out.println("Layer # of units " + aLayer.getNumberOfNeurons());
-				System.out.println(Arrays.deepToString(aLayer.getActivationVector().getArray()));
+				// System.out.println("Layer # of units " + aLayer.getNumberOfNeurons());
+				// System.out.println(Arrays.deepToString(aLayer.getActivationVector().getArray()));
 			}
 		}
+		return this.outputLayer.getOutputVector();
 	}
+
+	public double trainNN(Matrix inputVector, Matrix target){
+		// this is currently not a generic method, because we assume the output is just a scalar
+		// could be also more than one value
+		double[][] predictedTarget = this.processInput(inputVector).getArray();
+		BackProp BP = new BackProp(this, target, this.learningRate);
+		BP.computeBackProp();
+		// remember, currently assuming NN returns one value only!
+		return predictedTarget[0][0];
+	}
+
+	//Store the state of this neural network
+	public void storeGenome() {
+		ObjectOutputStream out = null;
+		try {
+			//create the memory folder manually
+			out = new ObjectOutputStream(new FileOutputStream("C:\\Users\\psftadm\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		try {
+			out.writeObject(this);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// Load a neural network from memory
+	public NeuralNetwork loadGenome() {
+
+		// Read from disk using FileInputStream
+		FileInputStream f_in = null;
+		try {
+			f_in = new FileInputStream("C:\\Users\\psftadm\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		// Read object using ObjectInputStream
+		ObjectInputStream obj_in = null;
+		try {
+			obj_in = new ObjectInputStream(f_in);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// Read an object
+		try {
+			return (NeuralNetwork) obj_in.readObject();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 }
-
-
-/*public class NeuralNetwork {
-
-	NeuralNetwork(){ }
-
-	NeuralNetwork(int inputs, int hidden, int outputs){}
-
-	public double getOutput(SensorModel a) {
-		return 0.5;
-	}
-}*/
