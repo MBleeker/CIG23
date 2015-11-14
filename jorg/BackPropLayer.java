@@ -34,7 +34,7 @@ class BackPropLayer {
 			/* Computes the error on the OUTPUT layer */
 			this.deltaMatrix = this.aLayer.getOutputVector().minus(target);
 			// System.out.println("OutputLayer - DeltaMatrix " + NetworkLayer.getDimMatrix(this.deltaMatrix) + " ActivationVec " + NetworkLayer.getDimMatrix(this.aLayer.getInputVector()));
-			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose());
+			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose()); // MAARTJE: why do you use the input vector???
 			// System.out.println("OutputLayer - gradient " + NetworkLayer.getDimMatrix(this.gradient));
 			// System.out.println("OutputLayer - weights " + NetworkLayer.getDimMatrix(this.aLayer.getWeightMatrix()));
 			// the gradient matrix must have the same dimensions as the weight matrix of the layer
@@ -59,7 +59,7 @@ class BackPropLayer {
 			this.deltaMatrix = this.derivation.arrayTimes(temp.transpose());
 			// System.out.println("OtherLayer - deltaMatrix " + NetworkLayer.getDimMatrix(this.deltaMatrix));
 			// System.out.println("OtherLayer - aLayer.getInputVector " + NetworkLayer.getDimMatrix(this.aLayer.getInputVector().transpose()));
-			// I am not sure about this last step: I am not sure wheter we should use the inputVector of the current layer
+			// I am not sure about this last step: I am not sure wheter we should use the inputVector of the current layer --> MAARTJE: Slides say: output current nodes --> Maar Andrew doet het weer anders
 			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose());
 			temp = null;
 			// System.out.println("OtherLayer - gradient " + NetworkLayer.getDimMatrix(this.gradient));
@@ -113,9 +113,14 @@ class BackPropLayer {
 	    return new Matrix(activation);
 	}
 	
+<<<<<<< HEAD
 	public double derivativeSign(double num) {
+=======
+
+	public double derivativeSigm(double num) {
+>>>>>>> 07705112b13115b0c2a2f04bf237487ddfaa943a
 		// write the derivative function of the sigmoid here and return value (similar to normal function, only difference is derivative)
-			return NetworkLayer.SigmoidFunction(num)  * (1.0-NetworkLayer.SigmoidFunction(num));
+		return NetworkLayer.SigmoidFunction(num)  * (1.0-NetworkLayer.SigmoidFunction(num));  // MAARTJE: if we store the value of the sigmoid function in the forward prop we don't have to calculate it again here
 	}
 
 	public double derivativeTanh(double num) {
