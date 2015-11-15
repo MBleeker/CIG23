@@ -125,7 +125,7 @@ public class DefaultDriver extends AbstractDriver {
 		this.enableExtras(new ABS());
 	}
 
-	public void control(Action action, SensorModel sensors) {
+	public void control_ali(Action action, SensorModel sensors) {
 		// Example of a bot that drives pretty well; you can use this to generate data
 		action.steering = DriversUtils.alignToTrackAxis(sensors, 0.5);
 		if(sensors.getSpeed() > 60.0D) {
@@ -166,7 +166,7 @@ public class DefaultDriver extends AbstractDriver {
 		// System.out.println(action.brake + "brake");
 	}
 
-    public void controlRace_mmj(Action action, SensorModel sensors) {
+    public void controlRace(Action action, SensorModel sensors) {
 
 		boolean logData = false;
 
@@ -187,8 +187,9 @@ public class DefaultDriver extends AbstractDriver {
 		}
 		// only use NN if not in trainings mode and useNN is enabled
 		if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN) {
-			System.out.println("**** Using NN for prediction ***");
-			action.steering = this.getSteering(sensors);
+			double psteer = this.getSteering(sensors);
+			System.out.println("Using pValue (pred <=> target) " + psteer +  " <=> " + action.steering);
+			action.steering = psteer;
 		}
         //super.ControlRace(action, sensors);
     }
