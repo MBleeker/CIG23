@@ -1,0 +1,6 @@
+TODO-List CI Project 2015
+
+- we moeten nog een preformance measurement vinden voor ons neural network
+- ik heb nog even wat papers door gescant; we kunnen de learning rate ook variabel maken met gradient gradient descent, hierdoor hoeven we niet oneindig veel verschillende learning rates te proberen 
+- we moeten asap een file hebben met data voor alle tracks
+
