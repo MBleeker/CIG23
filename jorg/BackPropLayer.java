@@ -113,12 +113,8 @@ class BackPropLayer {
 	    return new Matrix(activation);
 	}
 	
-<<<<<<< HEAD
-	public double derivativeSign(double num) {
-=======
 
-	public double derivativeSigm(double num) {
->>>>>>> 07705112b13115b0c2a2f04bf237487ddfaa943a
+	public double derivativeSign(double num) {
 		// write the derivative function of the sigmoid here and return value (similar to normal function, only difference is derivative)
 		return NetworkLayer.SigmoidFunction(num)  * (1.0-NetworkLayer.SigmoidFunction(num));  // MAARTJE: if we store the value of the sigmoid function in the forward prop we don't have to calculate it again here
 	}
