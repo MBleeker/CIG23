@@ -16,8 +16,6 @@ class BackPropLayer {
 	Matrix gradient;
 	Matrix previousDeltas;
 	Matrix derivation;
-	// Matrix deltaOutput;
-	// Matrix deltaHidden;
 	
 	public BackPropLayer(NetworkLayer aLayer) {
 		this.aLayer = aLayer;
@@ -32,38 +30,20 @@ class BackPropLayer {
 		
 		if (this.aLayer.getLayerType() == 3) {
 			/* Computes the error on the OUTPUT layer */
-			this.deltaMatrix = this.aLayer.getOutputVector().minus(target);
-			// System.out.println("OutputLayer - DeltaMatrix " + NetworkLayer.getDimMatrix(this.deltaMatrix) + " ActivationVec " + NetworkLayer.getDimMatrix(this.aLayer.getInputVector()));
-			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose()); // MAARTJE: why do you use the input vector???
-			// System.out.println("OutputLayer - gradient " + NetworkLayer.getDimMatrix(this.gradient));
-			// System.out.println("OutputLayer - weights " + NetworkLayer.getDimMatrix(this.aLayer.getWeightMatrix()));
-			// the gradient matrix must have the same dimensions as the weight matrix of the layer
-			// System.out.println(Arrays.deepToString(aLayer.getWeightMatrix().getArray()));
-
+			this.deltaMatrix = this.aLayer.getOutputVector().minus(target);			
+			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose()); 
 		}
 		
 		else if (this.aLayer.getLayerType() == 2) {
 			/* Computes the error on the HIDDEN layer */
 			this.derivation  = computeDerivativeActFunction();
-			// Jorg: I don't really like what I am doing here. Using the Backprop object to to
-			// get the next backpropLayer object of the next layer.
-			// Therefore I am doubting whether it would be better to just add a BackpropLayer property (object)
-			// to the NetworkLayer object?
 			this.previousDeltas = bp.getBackPropLayer(this.aLayer.getNextLayer()).getDeltaMatrix();
-			// System.out.println("OtherLayer - previousDeltas " + NetworkLayer.getDimMatrix(this.previousDeltas));
-			// System.out.println("OtherLayer - getNextLayer().getWeightMatrix " + NetworkLayer.getDimMatrix(this.aLayer.getNextLayer().getWeightMatrix()));
 			// more for readability: intermediate result, delta_prevLayer * weightM_prevLayer
 			Matrix temp = this.previousDeltas.transpose().times(this.aLayer.getNextLayer().getWeightMatrix());
-			// System.out.println("OtherLayer - derivation " + NetworkLayer.getDimMatrix(this.derivation));
-			// System.out.println("OtherLayer - temp " + NetworkLayer.getDimMatrix(temp));
 			this.deltaMatrix = this.derivation.arrayTimes(temp.transpose());
-			// System.out.println("OtherLayer - deltaMatrix " + NetworkLayer.getDimMatrix(this.deltaMatrix));
-			// System.out.println("OtherLayer - aLayer.getInputVector " + NetworkLayer.getDimMatrix(this.aLayer.getInputVector().transpose()));
 			// I am not sure about this last step: I am not sure wheter we should use the inputVector of the current layer --> MAARTJE: Slides say: output current nodes --> Maar Andrew doet het weer anders
 			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose());
 			temp = null;
-			// System.out.println("OtherLayer - gradient " + NetworkLayer.getDimMatrix(this.gradient));
-			// System.out.println("OtherLayer - weights " + NetworkLayer.getDimMatrix(this.aLayer.getWeightMatrix()));
 		}
 		
 		else {
@@ -78,8 +58,6 @@ class BackPropLayer {
 
 		// just to be sure we have a weight matrix
 		if (this.aLayer.getWeightMatrix() != null) {
-			// System.out.println("Update weights - derivative " + NetworkLayer.getDimMatrix(this.gradient));
-			// System.out.println("Update weights - aLayer.getWeightMatrix " + NetworkLayer.getDimMatrix(this.aLayer.getWeightMatrix()));
 			// not sure decent (minus) or ascent (plus)? currently assuming ascent
 			// objective function? target - estimate?
 			this.aLayer.setWeightMatrix( this.aLayer.getWeightMatrix().minus(this.gradient.times(learningRate)));

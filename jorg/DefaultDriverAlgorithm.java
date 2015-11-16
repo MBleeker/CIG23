@@ -13,8 +13,8 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
 
     // Jorg: added three global variables
     public static long epochs = 0;
-    public static boolean useNN = false;
-    public static boolean trainNN = true;
+    public static boolean useNN = true;
+    public static boolean trainNN = false;
 
     DefaultDriverGenome[] drivers = new DefaultDriverGenome[1];
     int [] results = new int[1];

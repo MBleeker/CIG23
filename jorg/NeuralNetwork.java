@@ -156,7 +156,7 @@ public class NeuralNetwork implements Serializable {
 		ObjectOutputStream out = null;
 		try {
 			//create the memory folder manually
-			out = new ObjectOutputStream(new FileOutputStream("C:\\Users\\psftadm\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem"));
+			out = new ObjectOutputStream(new FileOutputStream("F:\\java\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -173,7 +173,7 @@ public class NeuralNetwork implements Serializable {
 		// Read from disk using FileInputStream
 		FileInputStream f_in = null;
 		try {
-			f_in = new FileInputStream("C:\\Users\\psftadm\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem");
+			f_in = new FileInputStream("F:\\java\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}

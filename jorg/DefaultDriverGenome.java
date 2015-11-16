@@ -1,4 +1,3 @@
-
 import cicontest.torcs.genome.IGenome;
 
 public class DefaultDriverGenome implements IGenome {

@@ -1,5 +1,6 @@
 
 import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 /* Jorg: added some extra classes */
 import java.io.BufferedWriter;
@@ -9,11 +10,9 @@ import cicontest.algorithm.abstracts.AbstractDriver;
 import cicontest.algorithm.abstracts.DriversUtils;
 import cicontest.torcs.client.Action;
 import cicontest.torcs.client.SensorModel;
+import cicontest.torcs.controller.extras.*;
 import cicontest.torcs.genome.IGenome;
-import cicontest.torcs.controller.extras.ABS;
-import cicontest.torcs.controller.extras.AutomatedClutch;
-import cicontest.torcs.controller.extras.AutomatedGearbox;
-import cicontest.torcs.controller.extras.AutomatedRecovering;
+
 
 /* Jorg End */
 
@@ -27,17 +26,18 @@ public class DefaultDriver extends AbstractDriver {
 
     private NeuralNetwork MyNN;
     private BufferedWriter logFile;
+    private boolean logData = true;
+    private AutoRecover recover;
 
     /* Steering constants*/
 	final float  stuckAngle = (float) 0.523598775;
 
 	
     public DefaultDriver() {
-		super();
-		
-		
+		super(); // neemt class over die erboven zit --> Abstract driver in dit geval
+        this.initialize();
 		java.util.Date date= new java.util.Date();
-		String filename = "F:/temp/torcsRace_" + this.getTrackName() + ".dat";
+		String filename = "F:/temp/torcsRace_" + this.getTrackName() + ".dat"; // pad veranderen voor jezelf
 		
 		try {
 			FileWriter fwriter = new FileWriter(filename, false);
@@ -55,6 +55,7 @@ public class DefaultDriver extends AbstractDriver {
 		// TODO Auto-generated constructor stub
 	}
 
+	// methode stond er al in. Jorg heeft dingen toegevoegd om met ons netwerk te kunnen trainen
 	public void loadGenome(IGenome genome) {
         if (genome instanceof DefaultDriverGenome) {
             DefaultDriverGenome MyGenome = (DefaultDriverGenome) genome;
@@ -66,7 +67,7 @@ public class DefaultDriver extends AbstractDriver {
 			else {
 				this.MyNN = MyGenome.getMyNN();
 				this.buildNN();
-				// important: learning is set here for the NN
+				// important: learning is set here for the NN. THIS CAN BE CHANGED
 				MyNN.setLearningRate(0.001);
 			}
         } else {
@@ -79,8 +80,8 @@ public class DefaultDriver extends AbstractDriver {
 
 		try {
 			System.out.println("Build layers of NN");
-			this.MyNN.buildInputLayer(6, "tanh");
-			this.MyNN.buildHiddenLayer(3, "tanh");
+			this.MyNN.buildInputLayer(7, "tanh"); // want we hebben zoveel nodes in de input laag --> elke input waarde is een node
+			this.MyNN.buildHiddenLayer(40, "tanh");
 			this.MyNN.buildOutputLayer(1, "tanh");
 		}
 		catch (NeuralNetwork.WrongBuildSequence e){
@@ -119,9 +120,10 @@ public class DefaultDriver extends AbstractDriver {
     }
 
 	public void initialize(){
+        this.recover = new AutoRecover();
 		this.enableExtras(new AutomatedClutch());
 		this.enableExtras(new AutomatedGearbox());
-		this.enableExtras(new AutomatedRecovering());
+		this.enableExtras(this.recover);
 		this.enableExtras(new ABS());
 	}
 
@@ -161,17 +163,25 @@ public class DefaultDriver extends AbstractDriver {
 			System.out.println("Using pValue (pred <=> target) " + psteer +  " <=> " + action.steering);
 			action.steering = psteer;
 		}
+        if (logData) {
+            logSensorAction(action, sensors);
+        }
 		// System.out.println(action.steering +"steering");
 		// System.out.println(action.accelerate + "acceleration");
 		// System.out.println(action.brake + "brake");
 	}
 
+	// wordt elke 10 mm seconde aangeroepen --> Action terugsturen naar game server
     public void controlRace(Action action, SensorModel sensors) {
 
 		boolean logData = false;
 
 		// if(getStage() == cicontest.torcs.client.Controller.Stage.PRACTICE){
-		this.controlWarmUp(action, sensors);
+		this.controlWarmUp(action, sensors); // dit zorgt ervoor dat de auto op de weg blijft --> al een goede chauffeur. Rijdt over de track
+
+        if (this.recover.getStuck() > 10) {
+            System.out.println("*** Autorecovery in action ***");
+        }
 
 		if (logData) {
 			logSensorAction(action, sensors);
@@ -179,7 +189,7 @@ public class DefaultDriver extends AbstractDriver {
     	if (DefaultDriverAlgorithm.trainNN) {
 			// if in trainings mode
 			DefaultDriverAlgorithm.epochs++;
-			Matrix inputVectorSteering = createNNInputSteering(sensors);
+			Matrix inputVectorSteering = createNNInputSteering(sensors); //
 			Matrix target = createNNTarget(action.steering);
 			double pValueSteering = MyNN.trainNN(inputVectorSteering, target);
 			System.out.println("pValueSteering <=> targetValue = " + pValueSteering +  " <=> " + action.steering);
@@ -188,19 +198,30 @@ public class DefaultDriver extends AbstractDriver {
 		// only use NN if not in trainings mode and useNN is enabled
 		if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN) {
 			double psteer = this.getSteering(sensors);
-			System.out.println("Using pValue (pred <=> target) " + psteer +  " <=> " + action.steering);
-			action.steering = psteer;
+			System.out.println("Using pValue (pred <=> target) " + psteer +  " <=> " + action.steering); // dit zijn de stuurwaarden die het netwerk heeft berekend
+            if (this.recover.getStuck() > 10) {
+                System.out.println("Autorecovery in action, don't use NN predictions");
+            }
+            else {
+                action.steering = psteer;
+            }
+
+
 		}
         //super.ControlRace(action, sensors);
     }
 
+
+    // wordt standaard meegegeven
 	private Matrix createNNInputSteering(SensorModel sensors){
 
 		// we are passing now all 5 range values plus 1 for track angel
 		// pass filtered input to the NN
-		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 6, 11);
+		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 6, 11); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
 		limVector = extendArraySize(limVector);
 		limVector[limVector.length-1] = sensors.getAngleToTrackAxis();
+        limVector = extendArraySize(limVector);
+        limVector[limVector.length-1] = sensors.getTrackPosition();
 		return new Matrix(new double [][] {limVector}).transpose();
 	}
 
@@ -209,7 +230,7 @@ public class DefaultDriver extends AbstractDriver {
 		return new Matrix(new double[][] {{a}}).transpose();
 	}
 
-	/* Jorg: added new method to log sensor data and action data of car */
+	/* Jorg: added new method to log sensor data and action data of car */ // --> dit heeft jorg gebouwd om training data te verkrijgen
 	private void logSensorAction(Action a, SensorModel sensors){
 		
 		double[] RangeSensors = sensors.getTrackEdgeSensors();

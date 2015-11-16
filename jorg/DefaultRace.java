@@ -16,14 +16,14 @@ public class DefaultRace extends AbstractRace {
 
 	
 	public int[] runRace(DefaultDriverGenome[] drivers, boolean withGUI){
+		System.out.println("in run race new class");
 		int size = Math.min(10, drivers.length);
 		DefaultDriver[] driversList = new DefaultDriver[size];
 		for(int i=0; i<size; i++){
 			driversList[i] = new DefaultDriver();
-			System.out.println(this.track);
 			driversList[i].loadGenome(drivers[i]);
-			
 		}
+		System.out.println("before return");
 		return runRace(driversList, withGUI, true);
 	}
 
