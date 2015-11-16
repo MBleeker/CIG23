@@ -179,14 +179,10 @@ public class DefaultDriver extends AbstractDriver {
 		// if(getStage() == cicontest.torcs.client.Controller.Stage.PRACTICE){
 		this.controlWarmUp(action, sensors); // dit zorgt ervoor dat de auto op de weg blijft --> al een goede chauffeur. Rijdt over de track
 
-        if (this.recover.getStuck() > 10) {
-            System.out.println("*** Autorecovery in action ***");
-        }
-
 		if (logData) {
 			logSensorAction(action, sensors);
 		}
-    	if (DefaultDriverAlgorithm.trainNN) {
+        if (DefaultDriverAlgorithm.trainNN) {
 			// if in trainings mode
 			DefaultDriverAlgorithm.epochs++;
 			Matrix inputVectorSteering = createNNInputSteering(sensors); //
@@ -195,19 +191,23 @@ public class DefaultDriver extends AbstractDriver {
 			System.out.println("pValueSteering <=> targetValue = " + pValueSteering +  " <=> " + action.steering);
 
 		}
-		// only use NN if not in trainings mode and useNN is enabled
-		if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN) {
-			double psteer = this.getSteering(sensors);
-			System.out.println("Using pValue (pred <=> target) " + psteer +  " <=> " + action.steering); // dit zijn de stuurwaarden die het netwerk heeft berekend
-            if (this.recover.getStuck() > 10) {
-                System.out.println("Autorecovery in action, don't use NN predictions");
-            }
-            else {
-                action.steering = psteer;
-            }
+		// only use NN if not in trainings mode and useNN is enabled and not in recovery mode
+        if (this.recover.getStuck() > 10) {
+            System.out.println("*** Autorecovery in action ***");
+        }
+        else {
+            // not in recovery mode, use NN if enabled
+            if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN) {
+                double psteer = this.getSteering(sensors);
+                System.out.println("Using pValue (pred <=> target) " + psteer + " <=> " + action.steering); // dit zijn de stuurwaarden die het netwerk heeft berekend
+                if (this.recover.getStuck() > 10) {
+                    System.out.println("Autorecovery in action, don't use NN predictions");
+                } else {
+                    action.steering = psteer;
+                }
 
-
-		}
+            }
+        }
         //super.ControlRace(action, sensors);
     }
 
