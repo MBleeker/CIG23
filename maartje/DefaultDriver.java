@@ -1,6 +1,5 @@
 
 import java.io.FileWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
 /* Jorg: added some extra classes */
 import java.io.BufferedWriter;
@@ -10,9 +9,11 @@ import cicontest.algorithm.abstracts.AbstractDriver;
 import cicontest.algorithm.abstracts.DriversUtils;
 import cicontest.torcs.client.Action;
 import cicontest.torcs.client.SensorModel;
-import cicontest.torcs.controller.extras.*;
 import cicontest.torcs.genome.IGenome;
-
+import cicontest.torcs.controller.extras.ABS;
+import cicontest.torcs.controller.extras.AutomatedClutch;
+import cicontest.torcs.controller.extras.AutomatedGearbox;
+import cicontest.torcs.controller.extras.AutomatedRecovering;
 
 /* Jorg End */
 
@@ -26,8 +27,6 @@ public class DefaultDriver extends AbstractDriver {
 
     private NeuralNetwork MyNN;
     private BufferedWriter logFile;
-    private boolean logData = true;
-    private AutoRecover recover;
 
     /* Steering constants*/
 	final float  stuckAngle = (float) 0.523598775;
@@ -35,9 +34,10 @@ public class DefaultDriver extends AbstractDriver {
 	
     public DefaultDriver() {
 		super(); // neemt class over die erboven zit --> Abstract driver in dit geval
-        this.initialize();
+		
+		
 		java.util.Date date= new java.util.Date();
-		String filename = "F:/temp/torcsRace_" + this.getTrackName() + ".dat"; // pad veranderen voor jezelf
+		String filename = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/torcsRace_" + this.getTrackName() + ".dat"; // pad veranderen voor jezelf
 		
 		try {
 			FileWriter fwriter = new FileWriter(filename, false);
@@ -80,8 +80,8 @@ public class DefaultDriver extends AbstractDriver {
 
 		try {
 			System.out.println("Build layers of NN");
-			this.MyNN.buildInputLayer(7, "tanh"); // want we hebben zoveel nodes in de input laag --> elke input waarde is een node
-			this.MyNN.buildHiddenLayer(40, "tanh");
+			this.MyNN.buildInputLayer(6, "tanh"); // want we hebben zoveel nodes in de input laag --> elke input waarde is een node
+			this.MyNN.buildHiddenLayer(30, "tanh");
 			this.MyNN.buildOutputLayer(1, "tanh");
 		}
 		catch (NeuralNetwork.WrongBuildSequence e){
@@ -120,10 +120,9 @@ public class DefaultDriver extends AbstractDriver {
     }
 
 	public void initialize(){
-        this.recover = new AutoRecover();
 		this.enableExtras(new AutomatedClutch());
 		this.enableExtras(new AutomatedGearbox());
-		this.enableExtras(this.recover);
+		this.enableExtras(new AutomatedRecovering());
 		this.enableExtras(new ABS());
 	}
 
@@ -163,9 +162,6 @@ public class DefaultDriver extends AbstractDriver {
 			System.out.println("Using pValue (pred <=> target) " + psteer +  " <=> " + action.steering);
 			action.steering = psteer;
 		}
-        if (logData) {
-            logSensorAction(action, sensors);
-        }
 		// System.out.println(action.steering +"steering");
 		// System.out.println(action.accelerate + "acceleration");
 		// System.out.println(action.brake + "brake");
@@ -182,7 +178,7 @@ public class DefaultDriver extends AbstractDriver {
 		if (logData) {
 			logSensorAction(action, sensors);
 		}
-        if (DefaultDriverAlgorithm.trainNN) {
+    	if (DefaultDriverAlgorithm.trainNN) {
 			// if in trainings mode
 			DefaultDriverAlgorithm.epochs++;
 			Matrix inputVectorSteering = createNNInputSteering(sensors); //
@@ -191,26 +187,16 @@ public class DefaultDriver extends AbstractDriver {
 			System.out.println("pValueSteering <=> targetValue = " + pValueSteering +  " <=> " + action.steering);
 
 		}
-		// only use NN if not in trainings mode and useNN is enabled and not in recovery mode
-        if (this.recover.getStuck() > 10) {
-            System.out.println("*** Autorecovery in action ***");
-        }
-        else {
-            // not in recovery mode, use NN if enabled
-            if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN) {
-                double psteer = this.getSteering(sensors);
-                System.out.println("Using pValue (pred <=> target) " + psteer + " <=> " + action.steering); // dit zijn de stuurwaarden die het netwerk heeft berekend
-                if (this.recover.getStuck() > 10) {
-                    System.out.println("Autorecovery in action, don't use NN predictions");
-                } else {
-                    action.steering = psteer;
-                }
-
-            }
-        }
+		// only use NN if not in trainings mode and useNN is enabled
+		if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN) {
+			double psteer = this.getSteering(sensors);
+			System.out.println("Using pValue (pred <=> target) " + psteer +  " <=> " + action.steering); // dit zijn de stuurwaarden die het netwerk heeft berekend
+			action.steering = psteer;
+			AutomatedRecovering recov = new AutomatedRecovering();
+			recov.process(action, sensors);
+		}
         //super.ControlRace(action, sensors);
     }
-
 
     // wordt standaard meegegeven
 	private Matrix createNNInputSteering(SensorModel sensors){
@@ -220,8 +206,6 @@ public class DefaultDriver extends AbstractDriver {
 		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 6, 11); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
 		limVector = extendArraySize(limVector);
 		limVector[limVector.length-1] = sensors.getAngleToTrackAxis();
-        limVector = extendArraySize(limVector);
-        limVector[limVector.length-1] = sensors.getTrackPosition();
 		return new Matrix(new double [][] {limVector}).transpose();
 	}
 

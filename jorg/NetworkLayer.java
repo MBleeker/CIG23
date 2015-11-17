@@ -127,10 +127,10 @@ class NetworkLayer implements Serializable {
 	
 	public void calculateActivation(Matrix input) {
 		
-		System.out.println("Weight dim " + NetworkLayer.getDimMatrix(this.getWeightMatrix()) );
-		System.out.println("Input dim " + NetworkLayer.getDimMatrix(input) );
+		// System.out.println("Weight dim " + NetworkLayer.getDimMatrix(this.getWeightMatrix()) );
+		// System.out.println("Input dim " + NetworkLayer.getDimMatrix(input) );
 		this.activationVector = this.getWeightMatrix().times(input);
-		System.out.println("Output dim " + NetworkLayer.getDimMatrix(this.activationVector) );
+		// System.out.println("Output dim " + NetworkLayer.getDimMatrix(this.activationVector) );
 	}
 	
 	public void calculateOutput() {

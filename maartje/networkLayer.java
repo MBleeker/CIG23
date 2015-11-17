@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.util.Arrays;
 
 import Jama.Matrix;
 
@@ -15,6 +14,7 @@ class NetworkLayer implements Serializable {
 	private int numberOfNeurons;
 	private int layerType;
 	private Matrix weightMatrix;
+	private Matrix inputVector;
 	private Matrix activationVector;
 	private Matrix outputVector;
 	private NetworkLayer previousLayer;
@@ -33,12 +33,21 @@ class NetworkLayer implements Serializable {
 		this.layerType = layerType;
 		this.previousLayer = null;
 		this.nextLayer = null;
+		this.inputVector = new Matrix(new double[numberOfNeurons], 1); 
 		this.activationVector = new Matrix(new double[numberOfNeurons], 1); 
 		this.outputVector = new Matrix(new double[numberOfNeurons], 1);
 		this.typeOfActFunction = typeActFunc;
 		
 	}
 	
+	public Matrix getInputVector() {
+		return inputVector;
+	}
+
+	public void setInputVector(Matrix inputVector) {
+		this.inputVector = inputVector;
+	}
+
 	public String getTypeOfActFunction() {
 		return typeOfActFunction;
 	}
@@ -62,7 +71,11 @@ class NetworkLayer implements Serializable {
 	public Matrix getWeightMatrix() {
 		return weightMatrix;
 	}
-	
+
+	public void setWeightMatrix(Matrix s) {
+		this.weightMatrix = s;
+	}
+
 	public Matrix getActivationVector() {
 		return activationVector;
 	}
@@ -98,9 +111,6 @@ class NetworkLayer implements Serializable {
 	
 	public void initializeWeightMatrix() {
 	
-
-		
-		
 		// if there is no previous layer we can't initialize
 		// e.g. the InputLayer has no WeightMatrix
 		if (this.previousLayer != null) {
@@ -109,8 +119,7 @@ class NetworkLayer implements Serializable {
 			// M = number of units this layer
 			// so we go from M-dim to N-dim 
 			int M = this.getPreviousLayer().getNumberOfNeurons();
-			int N = this.getNumberOfNeurons();			
-			//this.weightMatrix = Matrix.ones(N,M);
+			int N = this.getNumberOfNeurons();
 			this.weightMatrix = Matrix.random(N, M);
 			
 		}
@@ -118,10 +127,10 @@ class NetworkLayer implements Serializable {
 	
 	public void calculateActivation(Matrix input) {
 		
-		System.out.println("Weight dim " + this.getDimMatrix(this.getWeightMatrix()) );
-		System.out.println("Input dim " + this.getDimMatrix(input) );
+		System.out.println("Weight dim " + NetworkLayer.getDimMatrix(this.getWeightMatrix()) );
+		System.out.println("Input dim " + NetworkLayer.getDimMatrix(input) );
 		this.activationVector = this.getWeightMatrix().times(input);
-		System.out.println("Output dim " + this.getDimMatrix(this.activationVector) );
+		System.out.println("Output dim " + NetworkLayer.getDimMatrix(this.activationVector) );
 	}
 	
 	public void calculateOutput() {
@@ -134,32 +143,30 @@ class NetworkLayer implements Serializable {
 	        for (int j = 0; j<m; j++) {
 	        	 switch (this.typeOfActFunction) {
 	        	 	case "tanh":
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
+	        	 		hx[i][j] = NetworkLayer.Tanh(hx[i][j]);
 	        	 		break;
 	        	 	case "sig":
-	        	 		hx[i][j] = this.SigmoidFunction(hx[i][j]);
+	        	 		hx[i][j] = NetworkLayer.SigmoidFunction(hx[i][j]);
 	        	 	default: 
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
+	        	 		hx[i][j] = NetworkLayer.Tanh(hx[i][j]);
 	        	 }
 	             
 	        }
 	    }
 	    this.outputVector = new Matrix(hx);
-	    System.out.println("outputVector");
-	    System.out.println(Arrays.deepToString(outputVector.getArray()));
 	}
 	
-	protected double SigmoidFunction(double num){
+	public static double SigmoidFunction(double num){
 		
-		return 1.0 / (1.0 + Math.exp(-1.0 * num));
+		return 1.0 / (1.0 + BoundNumbers.exp(-1.0 * num));
 	}
 	
-	protected double Tanh(double num) {
-		final double result = (Math.exp(num*2.0)-1.0)/(Math.exp(num*2.0)+1.0);
+	public static double Tanh(double num) {
+		final double result = (BoundNumbers.exp(num*2.0)-1.0)/(BoundNumbers.exp(num*2.0)+1.0);
 		return result;
 	}
-	
-	private String getDimMatrix(Matrix a) {
+
+	public static String getDimMatrix(Matrix a) {
 		
 		int M = a.getColumnDimension();
 		int N = a.getRowDimension();

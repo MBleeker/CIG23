@@ -7,18 +7,15 @@
  * - We use the delta's to update the weight matrices
  */
 
-import java.util.Arrays;
-
 import Jama.Matrix;
 
 class BackPropLayer {
 
 	NetworkLayer aLayer;
 	Matrix deltaMatrix;
+	Matrix gradient;
 	Matrix previousDeltas;
 	Matrix derivation;
-	// Matrix deltaOutput;
-	// Matrix deltaHidden;
 	
 	public BackPropLayer(NetworkLayer aLayer) {
 		this.aLayer = aLayer;
@@ -28,23 +25,25 @@ class BackPropLayer {
 		return this.deltaMatrix;
 	}
 
-	public Matrix getDeltaMatrixPrevious() {
-		return this.previousDeltas;
-	}
 	
-	/* Computes the error on the output layer */
-	public void computeDelta(Matrix target) {
+	public void computeDelta(BackProp bp, Matrix target) {
 		
 		if (this.aLayer.getLayerType() == 3) {
-			this.deltaMatrix = this.aLayer.getOutputVector().minus(target);
-			
+			/* Computes the error on the OUTPUT layer */
+			this.deltaMatrix = this.aLayer.getOutputVector().minus(target);			
+			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose()); 
 		}
 		
 		else if (this.aLayer.getLayerType() == 2) {
-			Matrix derivative = computeDerivativeActFunction();
-			this.previousDeltas = this.deltaMatrix; //so this really only works if you assume that you go through the network layer by layer, from output to input
-			
-			this.deltaMatrix = derivative.times(this.aLayer.getWeightMatrix().times(this.previousDeltas));
+			/* Computes the error on the HIDDEN layer */
+			this.derivation  = computeDerivativeActFunction();
+			this.previousDeltas = bp.getBackPropLayer(this.aLayer.getNextLayer()).getDeltaMatrix();
+			// more for readability: intermediate result, delta_prevLayer * weightM_prevLayer
+			Matrix temp = this.previousDeltas.transpose().times(this.aLayer.getNextLayer().getWeightMatrix());
+			this.deltaMatrix = this.derivation.arrayTimes(temp.transpose());
+			// I am not sure about this last step: I am not sure wheter we should use the inputVector of the current layer --> MAARTJE: Slides say: output current nodes --> Maar Andrew doet het weer anders
+			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose());
+			temp = null;
 		}
 		
 		else {
@@ -52,60 +51,20 @@ class BackPropLayer {
 			System.out.println("This is not a valid layer type to compute an error on.");
 		}
 	}
-	
-	/* CHEAT SHEET:
-	
-	protected double SigmoidFunction(double num){
-		
-		return 1.0 / (1.0 + Math.exp(-1.0 * num));
+
+	// this is the actual "learning task", update the weightMatrices for each layer
+	// that has a weight matrix...in our model only the inputlayer does not have one
+	public void updateWeightMatrix(double learningRate) {
+
+		// just to be sure we have a weight matrix
+		if (this.aLayer.getWeightMatrix() != null) {
+			// not sure decent (minus) or ascent (plus)? currently assuming ascent
+			// objective function? target - estimate?
+			this.aLayer.setWeightMatrix( this.aLayer.getWeightMatrix().minus(this.gradient.times(learningRate)));
+		}
 	}
 	
-	public void calculateOutput() {
-		
-		double[][] hx = this.activationVector.getArray();
-	    int n = this.activationVector.getRowDimension();
-	    int m = this.activationVector.getColumnDimension();
-
-	    for (int i = 0; i < n; i++) {
-	        for (int j = 0; j<m; j++) {
-	        	 switch (this.typeOfActFunction) {
-	        	 	case "tanh":
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
-	        	 		break;
-	        	 	case "sig":
-	        	 		hx[i][j] = this.SigmoidFunction(hx[i][j]);
-	        	 	default: 
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
-	        	 }
-	             
-	        }
-	    }
-	    this.outputVector = new Matrix(hx);
-	    System.out.println("outputVector");
-	    System.out.println(Arrays.deepToString(outputVector.getArray()));
-	} */
-	
 	public Matrix computeDerivativeActFunction() {
-		
-		/* double[][] hx = this.activationVector.getArray();
-	    int n = this.activationVector.getRowDimension();
-	    int m = this.activationVector.getColumnDimension();
-
-	    for (int i = 0; i < n; i++) {
-	        for (int j = 0; j<m; j++) {
-	        	 switch (this.typeOfActFunction) {
-	        	 	case "tanh":
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
-	        	 		break;
-	        	 	case "sig":
-	        	 		hx[i][j] = this.SigmoidFunction(hx[i][j]);
-	        	 	default: 
-	        	 		hx[i][j] = this.Tanh(hx[i][j]);
-	        	 }
-	             
-	        }
-	    }
-	    this.outputVector = new Matrix(hx); */
 		
 		Matrix activationMatrix = this.aLayer.getActivationVector();
 		double[][] activation = activationMatrix.getArray();
@@ -116,8 +75,11 @@ class BackPropLayer {
 	        for (int j = 0; j<m; j++) {
 	        	switch (this.aLayer.getTypeOfActFunction()) {
 	        		case "sig":
-	        			activation[i][j] = derivativeSigm(activation[i][j]);
+	        			activation[i][j] = derivativeSign(activation[i][j]);
+	        			break;
 	        		case "tanh":
+						activation[i][j] = derivativeTanh(activation[i][j]);
+	        			break;
 	        			//still need to write this
 	        		default:
 	        			// throw error --> Still need to write this
@@ -126,13 +88,21 @@ class BackPropLayer {
 	        }
 	    }
 	    
-	    this.derivation = new Matrix(activation);
-	    return this.derivation;
+	    return new Matrix(activation);
 	}
 	
-	public void derivativeSigm(double activation) {
+
+	public double derivativeSign(double num) {
 		// write the derivative function of the sigmoid here and return value (similar to normal function, only difference is derivative)
+		return NetworkLayer.SigmoidFunction(num)  * (1.0-NetworkLayer.SigmoidFunction(num));  // MAARTJE: if we store the value of the sigmoid function in the forward prop we don't have to calculate it again here
 	}
 
-	
+	public double derivativeTanh(double num) {
+		//
+		return ( 1.0-Math.pow(NetworkLayer.Tanh(num), 2.0) );
+
+
+	}
 }
+
+
