@@ -40,20 +40,20 @@ if __name__ == "__main__":
     raw_data_file =  open(test_file, 'r')
 
     data_file = raw_data_file.readlines()[2:]
-    fd = open('data.csv','wb')
-    writer = csv.writer(fd,delimiter=';')
+    csv_file = open('data.csv','wb')
+    
     for line in data_file:
         data_array = line.split(";")
         input_vector = data_array[0:len(data_array)-5]
         target_vector = data_array[len(data_array)-5:]
         noisy_data = created_noisy_data(input_vector,"normal")
         new_data_vector = np.append(noisy_data, target_vector).tolist()
-        print new_data_vector
-        writer.writerows(new_data_vector)
+        data_string =  ';'.join(map(str, new_data_vector))
+        csv_file.write(data_string)
         break 
-    fd.close()
+    csv_file.close()
 
-    # TODO: how to write array to one line instead of one line per value?
+    
 """
 for root, dirs, files in os.walk(DATA_FOLDER):
         for file in files:
