@@ -131,6 +131,7 @@ public class NeuralNetwork implements Serializable {
 			if (aLayer.getWeightMatrix() != null) {
 				// get output of previous layer
 				Matrix outputPrevLayer = this.allLayers.get(this.allLayers.indexOf(aLayer)-1).getOutputVector();
+				//System.out.println("output dim " + NetworkLayer.getDimMatrix(outputPrevLayer) );
 				aLayer.setInputVector(outputPrevLayer);
 				aLayer.calculateActivation(outputPrevLayer);
 				aLayer.calculateOutput();
@@ -149,52 +150,6 @@ public class NeuralNetwork implements Serializable {
 		BP.computeBackProp();
 		// remember, currently assuming NN returns one value only!
 		return predictedTarget[0][0];
-	}
-
-	//Store the state of this neural network
-	public void storeGenome() {
-		ObjectOutputStream out = null;
-		try {
-			//create the memory folder manually
-			out = new ObjectOutputStream(new FileOutputStream("F:\\java\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		try {
-			out.writeObject(this);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	// Load a neural network from memory
-	public NeuralNetwork loadGenome() {
-
-		// Read from disk using FileInputStream
-		FileInputStream f_in = null;
-		try {
-			f_in = new FileInputStream("F:\\java\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-
-		// Read object using ObjectInputStream
-		ObjectInputStream obj_in = null;
-		try {
-			obj_in = new ObjectInputStream(f_in);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// Read an object
-		try {
-			return (NeuralNetwork) obj_in.readObject();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 }

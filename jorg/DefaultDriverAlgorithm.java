@@ -13,8 +13,9 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
 
     // Jorg: added three global variables
     public static long epochs = 0;
-    public static boolean useNN = true;
+    public static boolean useNN = false;
     public static boolean trainNN = false;
+    public static boolean retrainNN = true;
 
     DefaultDriverGenome[] drivers = new DefaultDriverGenome[1];
     int [] results = new int[1];
@@ -26,7 +27,7 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
     public void run(boolean continue_from_checkpoint) {
         if(!continue_from_checkpoint){
             //init NN
-            System.out.println("Use NN " + useNN + " : trainings mode: " + trainNN);
+            System.out.println("Use NN " + useNN + " : trainings: " + trainNN  + " or retrain mode " + retrainNN );
             DefaultDriverGenome genome = new  DefaultDriverGenome();
             drivers[0] = genome;
 
@@ -41,10 +42,6 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
             // Save genome/nn
             DriversUtils.storeGenome(drivers[0]);
 
-            // Jorg: Save network
-            if (trainNN) {
-                drivers[0].getMyNN().storeGenome();
-            }
         }
             // create a checkpoint this allows you to continue this run later
             DriversUtils.createCheckpoint(this);
@@ -54,7 +51,7 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
 	public static void main(String[] args) {
 
         //Set path to torcs.properties
-        TorcsConfiguration.getInstance().initialize(new File("F:/java/workspace/SController/bin/torcs.properties"));
+        TorcsConfiguration.getInstance().initialize(new File("F:\\java\\IdeaProjects\\TorcsController\\out\\production\\torcs.properties"));
 		/*
 		 *
 		 * Start without arguments to run the algorithm
