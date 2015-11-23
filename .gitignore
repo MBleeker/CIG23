@@ -2,4 +2,7 @@
 .DS_Store?
 .pyc
 .py.save
-
+.settings
+.metadata
+.metadata/
+.recommenders/
