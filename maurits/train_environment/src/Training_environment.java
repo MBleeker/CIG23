@@ -6,9 +6,7 @@ import Jama.Matrix;
 
 import java.util.*;
 import java.math.BigDecimal;
-public class Training_evoirment {
-	
-	//System.out.println("Hello, World");
+public class Training_environment {
 	
 	private static Matrix makeVector(String[] data_point) {
 		double[][] vector_array = new double[data_point.length][1];
