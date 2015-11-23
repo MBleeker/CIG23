@@ -28,7 +28,6 @@ class NetworkLayer implements Serializable {
 	 * @param numberOfNeurons 
 	 * @param layerType 1: input, 2: hidden, 3: output
 	 */
-	
 	public NetworkLayer(int numberOfNeurons, int layerType, String typeActFunc) {
 		this.numberOfNeurons = numberOfNeurons;
 		this.layerType = layerType;
@@ -89,6 +88,7 @@ class NetworkLayer implements Serializable {
 		this.outputVector = outputVector;
 	}
 
+		
 	/*
 	 * Method to set the previous layer of the current layer.
 	 * You want to know the previous layer and the next layer, in order to be
@@ -96,7 +96,6 @@ class NetworkLayer implements Serializable {
 	 * 
 	 * @param previousLayer The layer of nodes before the current layer
 	 */
-	
 	public void setPreviousLayer(NetworkLayer previousLayer) {
 		this.previousLayer = previousLayer;
 	}
@@ -106,7 +105,6 @@ class NetworkLayer implements Serializable {
 	 * 
 	 * @param nextLayer The layer of nodes after the current layer
 	 */
-	
 	public void setNextLayer (NetworkLayer nextLayer) {
 		this.nextLayer = nextLayer;
 	}
@@ -129,16 +127,11 @@ class NetworkLayer implements Serializable {
 	
 	public void calculateActivation(Matrix input) {
 		
-		System.out.println("Weight dim " + NetworkLayer.getDimMatriString(this.getWeightMatrix()) );
-		System.out.println("Input dim " + NetworkLayer.getDimMatrix(input) );
+		//System.out.println("Weight dim " + NetworkLayer.getDimMatrix(this.getWeightMatrix()) );
+		//System.out.println("Input dim " + NetworkLayer.getDimMatrix(input) );
 		this.activationVector = this.getWeightMatrix().times(input);
-		System.out.println("Output dim " + NetworkLayer.getDimMatriString(this.activationVector) );
+		//System.out.println("Output dim " + NetworkLayer.getDimMatrix(this.activationVector) );
 	}
-	
-	/*
-	 * Method that returns the output function of a layer 
-	 * 
-	 */
 	
 	public void calculateOutput() {
 		
@@ -154,54 +147,27 @@ class NetworkLayer implements Serializable {
 	        	 		break;
 	        	 	case "sig":
 	        	 		hx[i][j] = NetworkLayer.SigmoidFunction(hx[i][j]);
-	        	 		break;
 	        	 	default: 
 	        	 		hx[i][j] = NetworkLayer.Tanh(hx[i][j]);
-	        	 		break;
 	        	 }
+	             
 	        }
 	    }
 	    this.outputVector = new Matrix(hx);
 	}
 	
-	/*
-	 * Method that returns the Sigmoid activation function 
-	 * 
-	 */
-	
-	public static double SigmoidFunction(double num) {
+	public static double SigmoidFunction(double num){
 		
 		return 1.0 / (1.0 + BoundNumbers.exp(-1.0 * num));
 	}
-	
-	/*
-	 * Method that returns the tanh activation function 
-	 * 
-	 */
 	
 	public static double Tanh(double num) {
 		final double result = (BoundNumbers.exp(num*2.0)-1.0)/(BoundNumbers.exp(num*2.0)+1.0);
 		return result;
 	}
-	
-	/*
-	 * Method that returns the the dimensionality of a Matrix
-	 * 
-	 */
-	
-	public static int[] getDimMatrix(Matrix a) {
-		int M = a.getColumnDimension();
-		int N = a.getRowDimension();
-		int[] dim_array = {N, M};
-		return dim_array;
-	}
-	
-	/*
-	 * Method that returns the the dimensionality of a Matrix in a string 
-	 * 
-	 */ 
-	
-	public static String getDimMatriString(Matrix a) {
+
+	public static String getDimMatrix(Matrix a) {
+		
 		int M = a.getColumnDimension();
 		int N = a.getRowDimension();
 		return "(" + N + ", " + M + ")";

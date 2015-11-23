@@ -43,7 +43,7 @@ def created_noisy_data(data_array, noise_distribution):
 
 def generate_separated_data_files(DATA_FOLDER, DATA_OUPUT_FOLDER):
     output_folder = DATA_OUPUT_FOLDER + "Separeted_training_datasets_" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    os.makedirs(output_folder)
+    #os.makedirs(output_folder)
     for root, dirs, files in os.walk(DATA_FOLDER):
         for file in files:
             if file.endswith(".dat"):
@@ -66,7 +66,7 @@ def generate_test_and_training_files(DATA_FOLDER, DATA_OUPUT_FOLDER):
     training_data = []
     test_data = []
     output_folder = DATA_OUPUT_FOLDER + "Test_and_Training_data_file" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    os.makedirs(output_folder)
+    #os.makedirs(output_folder)
     for root, dirs, files in os.walk(DATA_FOLDER):
         for file in files:
             if file.endswith(".dat"):
@@ -82,16 +82,17 @@ def generate_test_and_training_files(DATA_FOLDER, DATA_OUPUT_FOLDER):
                     training_data.extend(data_file[0:training_data_index])
                     test_data.extend(data_file[training_data_index:])
 
-    csv_train = open(output_folder + "/training_set"  + ".csv" ,'w')
-    csv_test= open(output_folder + "/test_set"  + ".csv" ,'w')
-    make_csv_file(csv_train, training_data, "normal")
-    make_csv_file(csv_test, test_data, "normal")
+    #csv_train = open(output_folder + "/training_set"  + ".csv" ,'w')
+    #csv_test= open(output_folder + "/test_set"  + ".csv" ,'w')
+    make_csv_file(None, training_data, "normal")
+    make_csv_file(None, test_data, "normal")
     csv_train.close()
     csv_test.close()
 
 
 
 def make_csv_file(csv_file, data_file, noise_distribution):
+    counter = 0
     for line in data_file:
         data_array = line.split(";")
         input_vector = data_array[0:len(data_array)-5]
@@ -99,7 +100,11 @@ def make_csv_file(csv_file, data_file, noise_distribution):
         noisy_data = created_noisy_data(input_vector, noise_distribution)
         new_data_vector = np.append(noisy_data, target_vector).tolist()
         data_string =  ';'.join(map(str, new_data_vector))
-        csv_file.write(data_string)
+        counter += 1
+        print data_string
+        if counter >= 1000:
+            sys.exit()
+        #csv_file.write(data_string)
     
 if __name__ == "__main__":
     if not os.path.exists(DATA_OUPUT_FOLDER): # make output folder if it not exists yet 

@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.io.*;
 import Jama.Matrix;
+import cicontest.torcs.client.SensorModel;
 
 /*
  * Class to implement the feed forward neural network that is 
@@ -28,25 +29,13 @@ public class NeuralNetwork implements Serializable {
 		
 	}
 	
-	// set here the path where you want to save the genome of your neural network 
-	String filePath = "C:\\Users\\psftadm\\IdeaProjects\\TorcsController\\out\\memory\\mydriver.mem";
 	NetworkLayer inputLayer = null;
 	NetworkLayer outputLayer = null;
-	private double error ; 
 	private double learningRate = 0.001; // default value
 	protected List<NetworkLayer> allLayers = new ArrayList<NetworkLayer>();
-	
-	/*
-	 * Method that return the learning rate for this NN 
-	 * @param numberOfNeurons the number of Neurons the layer contains
-	 */
-	
+
 	public double getLearningRate() {
-		return this.learningRate;
-	}
-	
-	public double giveModelPreformance() {
-		return error;
+		return learningRate;
 	}
 
 	public void setLearningRate(double learningRate) {
@@ -69,7 +58,6 @@ public class NeuralNetwork implements Serializable {
 	 * Method to construct a hidden layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	
 	public void buildHiddenLayer(int numberOfNeurons, String actFunction) throws WrongBuildSequence {
 		NetworkLayer newHiddenLayer = new NetworkLayer(numberOfNeurons, 2, actFunction);
 		
@@ -92,10 +80,11 @@ public class NeuralNetwork implements Serializable {
 		this.allLayers.add(newHiddenLayer);
 	}
 	
-	/* Method to construct an output layer
+
+	/*
+	 * Method to construct an output layer
 	 * @param numberOfNeurons the number of Neurons the layer contains
 	 */
-	
 	public void buildOutputLayer(int numberOfNeurons, String actFunction) throws WrongBuildSequence {
 		NetworkLayer newOutputLayer = new NetworkLayer(numberOfNeurons, 3, actFunction);
 		
@@ -142,14 +131,12 @@ public class NeuralNetwork implements Serializable {
 			if (aLayer.getWeightMatrix() != null) {
 				// get output of previous layer
 				Matrix outputPrevLayer = this.allLayers.get(this.allLayers.indexOf(aLayer)-1).getOutputVector();
+				//System.out.println("output dim " + NetworkLayer.getDimMatrix(outputPrevLayer) );
 				aLayer.setInputVector(outputPrevLayer);
 				aLayer.calculateActivation(outputPrevLayer);
 				aLayer.calculateOutput();
 				// System.out.println("Layer # of units " + aLayer.getNumberOfNeurons());
 				// System.out.println(Arrays.deepToString(aLayer.getActivationVector().getArray()));
-			}
-			else {
-				// trow exception 
 			}
 		}
 		return this.outputLayer.getOutputVector();
@@ -170,7 +157,9 @@ public class NeuralNetwork implements Serializable {
 		ObjectOutputStream out = null;
 		try {
 			//create the memory folder manually
-			out = new ObjectOutputStream(new FileOutputStream(this.filePath));
+			String date = new java.util.Date().toString();
+			String outputPath = "/Users/Maurits/Documents/GitHub/School Projects/CIG23/maurits/NN genomes/mydriver"+ date +".mem"; 
+			out = new ObjectOutputStream(new FileOutputStream(outputPath));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -187,7 +176,7 @@ public class NeuralNetwork implements Serializable {
 		// Read from disk using FileInputStream
 		FileInputStream f_in = null;
 		try {
-			f_in = new FileInputStream(this.filePath);
+			f_in = new FileInputStream("C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/mydriver.mem");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -208,7 +197,6 @@ public class NeuralNetwork implements Serializable {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-		
 		return null;
 	}
 

@@ -15,7 +15,7 @@ class BackProp {
 	
 	/*
 	 * Constructor. NOTE: Also implement momentum? What is this exactly?
-	 * JÃ¶rg: yes I also recognized that in the Heaton example. I did not take
+	 * Jörg: yes I also recognized that in the Heaton example. I did not take
 	 * the effort to find out what that is.
 	 */
 	public BackProp(NeuralNetwork network, Matrix target, double learningRate) {
