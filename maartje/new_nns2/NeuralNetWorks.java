@@ -75,7 +75,7 @@ public class NeuralNetWorks {
 
 		String[] inputRangeValuesAcc = Arrays.copyOfRange(splits, 5, 18);
 
-		double[] trainingDataAcc = new double[17];
+		double[] trainingDataAcc = new double[18];
 		int i = 0;
 
 		// these are the 'normal' input values
@@ -89,6 +89,7 @@ public class NeuralNetWorks {
 		trainingDataAcc[14] = Double.parseDouble(splits[20]); // position
 		trainingDataAcc[15] = Double.parseDouble(splits[21]); // speed
 		trainingDataAcc[16] = Double.parseDouble(splits[22]); // gear
+		trainingDataAcc[17] = Double.parseDouble(splits[23]); // steering
 
 		return new Matrix(new double [][] {trainingDataAcc}).transpose();
 	}
@@ -276,7 +277,7 @@ public class NeuralNetWorks {
 			helper.MyNN1.buildOutputLayer(1, "tanh");
 			helper.MyNN1.setLearningRate(0.01);
 
-			helper2.myNNAcc.buildInputLayer(17, "tanh");
+			helper2.myNNAcc.buildInputLayer(18, "tanh");
 			helper2.myNNAcc.buildHiddenLayer(34, "tanh"); // seems to be the best value (trial and error)
 			helper2.myNNAcc.buildOutputLayer(1, "tanh");
 			helper2.myNNAcc.setLearningRate(0.01); // seems to be the best value (trial and error)

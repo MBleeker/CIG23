@@ -298,6 +298,8 @@ public class DefaultDriver extends AbstractDriver {
 		limVector[limVector.length-1] = sensors.getSpeed();
 		limVector = extendArraySize(limVector);
 		limVector[limVector.length-1] = sensors.getGear();
+		limVector = extendArraySize(limVector);
+		limVector[limVector.length-1] = getSteering(sensors);
 		return new Matrix(new double [][] {limVector}).transpose();
 	}
 
