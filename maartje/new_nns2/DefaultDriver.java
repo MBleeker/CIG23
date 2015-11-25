@@ -169,7 +169,7 @@ public class DefaultDriver extends AbstractDriver {
 		// Example of a bot that drives pretty well; you can use this to generate data
 		// Example of a bot that drives pretty well; you can use this to generate data
 		action.steering = DriversUtils.alignToTrackAxis(sensors, 0.5);
-		if(sensors.getSpeed() > 60.0D) {
+		/*if(sensors.getSpeed() > 60.0D) {
 			action.accelerate = 0.0D;
 			action.brake = 0.0D;
 		}
@@ -187,7 +187,7 @@ public class DefaultDriver extends AbstractDriver {
 		if(sensors.getSpeed() < 30.0D) {
 			action.accelerate = 1.0D;
 			action.brake = 0.0D;
-		}
+		} */
 
 		if (logData) {
 			logSensorAction(action, sensors);
@@ -207,6 +207,12 @@ public class DefaultDriver extends AbstractDriver {
 			 if (this.recover.getStuck() > 10) {
 				System.out.println("*** Autorecovery in action, not using NN values ***");
 			} else {
+
+				 double[] rangeValues = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 7, 10);
+				 if (rangeValues[0] > 80 && rangeValues[1] > 80 && rangeValues[2] > 80)  {
+					 action.accelerate = 3.0D;
+				 }
+
 				useNeuralNetwork(action, sensors);
 			}
 		}
