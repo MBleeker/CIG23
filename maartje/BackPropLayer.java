@@ -9,6 +9,8 @@
 
 import Jama.Matrix;
 
+import java.util.Arrays;
+
 class BackPropLayer {
 
 	NetworkLayer aLayer;
@@ -31,18 +33,22 @@ class BackPropLayer {
 		if (this.aLayer.getLayerType() == 3) {
 			/* Computes the error on the OUTPUT layer */
 			this.deltaMatrix = this.aLayer.getOutputVector().minus(target);			
-			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose()); 
+			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose());
+			//System.out.println("gradient output: " + Arrays.deepToString(this.gradient.getArray()));
 		}
 		
 		else if (this.aLayer.getLayerType() == 2) {
 			/* Computes the error on the HIDDEN layer */
 			this.derivation  = computeDerivativeActFunction();
+			//System.out.println("derivation: " + Arrays.deepToString(this.derivation.getArray()));
 			this.previousDeltas = bp.getBackPropLayer(this.aLayer.getNextLayer()).getDeltaMatrix();
 			// more for readability: intermediate result, delta_prevLayer * weightM_prevLayer
 			Matrix temp = this.previousDeltas.transpose().times(this.aLayer.getNextLayer().getWeightMatrix());
 			this.deltaMatrix = this.derivation.arrayTimes(temp.transpose());
 			// I am not sure about this last step: I am not sure wheter we should use the inputVector of the current layer --> MAARTJE: Slides say: output current nodes --> Maar Andrew doet het weer anders
 			this.gradient = this.deltaMatrix.times(this.aLayer.getInputVector().transpose());
+			//System.out.println("gradient hidden: " + Arrays.deepToString(this.gradient.getArray()));
+			//System.out.println("delta: " + Arrays.deepToString(this.deltaMatrix.getArray()));
 			temp = null;
 		}
 		
@@ -60,6 +66,8 @@ class BackPropLayer {
 		if (this.aLayer.getWeightMatrix() != null) {
 			// not sure decent (minus) or ascent (plus)? currently assuming ascent
 			// objective function? target - estimate?
+			// System.out.println("Weight matrix: " + Arrays.deepToString(this.aLayer.getWeightMatrix().getArray()));
+			//System.out.println("gradient: " + Arrays.deepToString(this.gradient.getArray()));
 			this.aLayer.setWeightMatrix( this.aLayer.getWeightMatrix().minus(this.gradient.times(learningRate)));
 		}
 	}

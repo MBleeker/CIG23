@@ -2,8 +2,11 @@ import java.io.File;
 import cicontest.algorithm.abstracts.AbstractAlgorithm;
 import cicontest.algorithm.abstracts.AbstractRace;
 import cicontest.algorithm.abstracts.DriversUtils;
+import cicontest.torcs.client.Controller;
 import cicontest.torcs.controller.Driver;
 import cicontest.torcs.controller.Human;
+import cicontest.torcs.race.Race;
+import cicontest.torcs.race.RaceResults;
 import race.TorcsConfiguration;
 
 
@@ -13,8 +16,9 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
 
     // Jorg: added three global variables
     public static long epochs = 0;
-    public static boolean useNN = false;
-    public static boolean trainNN = true;
+    public static boolean useNN = true;
+    public static boolean trainNN = false;
+    public static boolean retrainNN = false;
 
     DefaultDriverGenome[] drivers = new DefaultDriverGenome[1];
     int [] results = new int[1];
@@ -26,30 +30,34 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
     public void run(boolean continue_from_checkpoint) {
         if(!continue_from_checkpoint){
             //init NN
-            System.out.println("Use NN " + useNN + " : trainings mode: " + trainNN);
+            System.out.println("Use NN " + useNN + " : trainings: " + trainNN  + " or retrain mode " + retrainNN );
             DefaultDriverGenome genome = new  DefaultDriverGenome();
             drivers[0] = genome;
 
             //Start a race
-            DefaultRace race = new DefaultRace();
-            race.setTrack( AbstractRace.DefaultTracks.getTrack(0));
-            race.laps = 1;
-
-            //for speedup set withGUI to false
-            results = race.runRace(drivers, true);
+            Race race = new Race();
+            race.setTrack("road", "aalborg");
+            race.setTermination(Race.Termination.LAPS, 1);
+            race.setStage(Controller.Stage.RACE);
+            race.addCompetitor(new DefaultDriver());
+            Boolean withGUI = true;
+            RaceResults results;
+            if(withGUI) {
+                results = race.runWithGUI();
+            } else {
+                results = race.run();
+            }
+            // DefaultRace race = new DefaultRace();
+            // race.setTrack( AbstractRace.DefaultTracks.getTrack(0));
+            // race.laps = 1;
 
             // Save genome/nn
-            DriversUtils.storeGenome(drivers[0]);
+            // DriversUtils.storeGenome(drivers[0]);
 
-            // Jorg: Save network
-            if (trainNN) {
-                drivers[0].getMyNN().storeGenome();
-                //drivers[0]
-            }
         }
             // create a checkpoint this allows you to continue this run later
-            DriversUtils.createCheckpoint(this);
-            //DriversUtils.clearCheckpoint();
+            // DriversUtils.createCheckpoint(this);
+            // DriversUtils.clearCheckpoint();
     }
 
 	public static void main(String[] args) {
@@ -67,7 +75,7 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
 		 */
 
         DefaultDriverAlgorithm algorithm = new DefaultDriverAlgorithm();
-        DriversUtils.registerMemory(algorithm.getDriverClass());
+        // DriversUtils.registerMemory(algorithm.getDriverClass());
         if(args.length > 0 && args[0].equals("-show")){
             new DefaultRace().showBest();
         } else if(args.length > 0 && args[0].equals("-show-race")){

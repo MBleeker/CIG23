@@ -31,7 +31,7 @@ public class NeuralNetwork implements Serializable {
 	
 	NetworkLayer inputLayer = null;
 	NetworkLayer outputLayer = null;
-	private double learningRate = 0.001; // default value
+	private double learningRate = 0.01; // default value
 	protected List<NetworkLayer> allLayers = new ArrayList<NetworkLayer>();
 
 	public double getLearningRate() {
@@ -131,6 +131,7 @@ public class NeuralNetwork implements Serializable {
 			if (aLayer.getWeightMatrix() != null) {
 				// get output of previous layer
 				Matrix outputPrevLayer = this.allLayers.get(this.allLayers.indexOf(aLayer)-1).getOutputVector();
+				//System.out.println("output dim " + NetworkLayer.getDimMatrix(outputPrevLayer) );
 				aLayer.setInputVector(outputPrevLayer);
 				aLayer.calculateActivation(outputPrevLayer);
 				aLayer.calculateOutput();
@@ -144,57 +145,13 @@ public class NeuralNetwork implements Serializable {
 	public double trainNN(Matrix inputVector, Matrix target){
 		// this is currently not a generic method, because we assume the output is just a scalar
 		// could be also more than one value
+		//System.out.println("I should predict: " + Arrays.deepToString(target.getArray()));
 		double[][] predictedTarget = this.processInput(inputVector).getArray();
 		BackProp BP = new BackProp(this, target, this.learningRate);
 		BP.computeBackProp();
 		// remember, currently assuming NN returns one value only!
+		//System.out.println("I predict: " + predictedTarget[0][0]);
 		return predictedTarget[0][0];
-	}
-
-	//Store the state of this neural network
-	public void storeGenome() {
-		ObjectOutputStream out = null;
-		try {
-			//create the memory folder manually
-			out = new ObjectOutputStream(new FileOutputStream("C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/mydriver.mem"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		try {
-			out.writeObject(this);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	// Load a neural network from memory
-	public NeuralNetwork loadGenome() {
-
-		// Read from disk using FileInputStream
-		FileInputStream f_in = null;
-		try {
-			f_in = new FileInputStream("C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/mydriver.mem");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-
-		// Read object using ObjectInputStream
-		ObjectInputStream obj_in = null;
-		try {
-			obj_in = new ObjectInputStream(f_in);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// Read an object
-		try {
-			return (NeuralNetwork) obj_in.readObject();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 }
