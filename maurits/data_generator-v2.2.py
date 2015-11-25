@@ -24,7 +24,6 @@ GENERATE_TEST_AND_TRAINING_FILES = True
 
 
 """
-
 Function that adds noise on a data_vector 
 params: data_array and distribution of the noise
 :return: An noisy version of the origiginal input data.
@@ -40,7 +39,6 @@ def created_noisy_data(data_array, noise_distribution):
     
     # TODO: do we need more distributions ?
     
-
 def generate_separated_data_files(DATA_FOLDER, DATA_OUPUT_FOLDER):
     output_folder = DATA_OUPUT_FOLDER + "Separeted_training_datasets_" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     os.makedirs(output_folder)
@@ -88,8 +86,6 @@ def generate_test_and_training_files(DATA_FOLDER, DATA_OUPUT_FOLDER):
     make_csv_file(None, test_data, "normal")
     csv_train.close()
     csv_test.close()
-
-
 
 def make_csv_file(csv_file, data_file, noise_distribution):
     counter = 0
