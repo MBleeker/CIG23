@@ -31,7 +31,7 @@ public class NeuralNetwork implements Serializable {
 	
 	NetworkLayer inputLayer = null;
 	NetworkLayer outputLayer = null;
-	private double learningRate = 0.001; // default value
+	private double learningRate = 0.01; // default value
 	protected List<NetworkLayer> allLayers = new ArrayList<NetworkLayer>();
 
 	public double getLearningRate() {
