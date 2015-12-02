@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import cicontest.algorithm.abstracts.AbstractDriver;
 import cicontest.algorithm.abstracts.DriversUtils;
+import cicontest.algorithm.abstracts.map.TrackMap;
 import cicontest.torcs.client.Action;
 import cicontest.torcs.client.SensorModel;
 import cicontest.torcs.controller.extras.*;
@@ -15,63 +16,86 @@ import race.TorcsConfiguration;
 /* Jorg End */
 
 import Jama.Matrix;
+import race.TorcsConfiguration;
 
 public class DefaultDriver extends AbstractDriver {
 
-	private NeuralNetwork MyNN;
-	private NeuralNetwork MyNNAcc; // This network is to be used for acceleration
+	public NeuralNetwork MyNNSteer;
+	public NeuralNetwork MyNNAcc; // This network is to be used for acceleration
 	private BufferedWriter logFile;
-	private boolean logData = true;
+	private boolean logData = false;
 	private AutoRecover recover = null;
-	String output_dir = "c:\\temp\\";
+	public static String OUTPUT_DIR = "memory/";
+	public String output_dir;
 	String nn_mem_file_steer = "steering_nn.mem";
-	String nn_mem_file_acc = "nn_accelerate.mem";
+	String nn_mem_file_acc = "accelerate_nn.mem";
+	Boolean useNN;
+	Boolean trainNN;
+	int epochs = 0;
+	String driverID = "default";
 
-	// SimpleDriver auxDriver = null;
+	public DefaultDriver(String ID){
+
+		this.driverID = ID;
+		this.useNN = true;
+		this.trainNN = false;
+		this.initialize();
+		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
+		if (output_dir.trim() == "") {
+			output_dir = OUTPUT_DIR;
+		}
+	}
 
 	public DefaultDriver() {
 
+		this.useNN = true;
+		this.trainNN = false;
+		// System.out.println("Use NN " + this.useNN);
 		this.initialize();
-		java.util.Date date= new java.util.Date();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
+		if (output_dir.trim() == "") {
+			output_dir = OUTPUT_DIR;
+		}
+		// this.output_dir = "memory/";
 		// add "output_dir" to torcs_properties file
-		String filename = output_dir + "train_nn_data" + this.getTrackName() + ".dat";
+		String filename = output_dir + "train_nn_data.dat";
 
 		// initialize neural networks
 		this.getNeuralNetworks();
 
-		try {
-			FileWriter fwriter = new FileWriter(filename, false);
-			logFile = new BufferedWriter(fwriter);
-			String Header = "9rangeValues;angleToTrackAxis,trackPosition;gear;steering;accelerate;brake;clutch";
-			logFile.write(Header);
-			logFile.newLine();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		// only create log file if we want to collect data
+		if (logData) {
+			try {
+				FileWriter fwriter = new FileWriter(filename, false);
+				logFile = new BufferedWriter(fwriter);
+				String Header = "9rangeValues;angleToTrackAxis,trackPosition;gear;steering;accelerate;brake;clutch";
+				logFile.write(Header);
+				logFile.newLine();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-
-		// TODO Auto-generated constructor stub
 	}
 
 	public void getNeuralNetworks(){
 
-		if (DefaultDriverAlgorithm.useNN || DefaultDriverAlgorithm.retrainNN) {
+		if (this.useNN) {
 			// reuse stored networks
 			System.out.println("Load NN's from memory....");
-			this.MyNN = this.loadNN(this.output_dir + nn_mem_file_steer);
-			this.MyNNAcc = this.loadNN(this.output_dir + nn_mem_file_acc);
-			System.out.println(Arrays.deepToString(this.MyNN.outputLayer.getWeightMatrix().getArray()));
+			this.MyNNSteer = this.loadNN(this.output_dir + nn_mem_file_steer);
+			//this.MyNNAcc = this.loadNN(this.output_dir + nn_mem_file_acc);
+			System.out.println(Arrays.deepToString(this.MyNNSteer.outputLayer.getWeightMatrix().getArray()));
 		}
 		else {
 			// if new networks need to be trained
-			if (DefaultDriverAlgorithm.trainNN) {
+			if (this.trainNN) {
 				System.out.println("Create new NN's for training....");
 				// build neural network for steering
-				this.MyNN = new NeuralNetwork();
+				this.MyNNSteer = new NeuralNetwork();
 				this.buildNN();
 				// important: learning is set here for the NN. THIS CAN BE CHANGED
-				MyNN.setLearningRate(0.1);
+				MyNNSteer.setLearningRate(0.1);
 				// build neural network for acceleration and breaking
 				this.MyNNAcc =  new NeuralNetwork();
 				this.buildNNAcc(); // This is the acceleration network
@@ -88,9 +112,9 @@ public class DefaultDriver extends AbstractDriver {
 
 		try {
 			System.out.println("Build layers of steering network");
-			this.MyNN.buildInputLayer(8, "tanh"); //
-			this.MyNN.buildHiddenLayer(18, "tanh");
-			this.MyNN.buildOutputLayer(1, "tanh");
+			this.MyNNSteer.buildInputLayer(8, "tanh"); //
+			this.MyNNSteer.buildHiddenLayer(18, "tanh");
+			this.MyNNSteer.buildOutputLayer(1, "tanh");
 		}
 		catch (NeuralNetwork.WrongBuildSequence e){
 			e.printStackTrace();
@@ -119,10 +143,11 @@ public class DefaultDriver extends AbstractDriver {
 		return pValueAcceleration[0][0];
 		//return 1;
 	}
+	
 	public double getSteering(SensorModel sensors){
 
 		Matrix VectorSteering = createNNInputSteering(sensors);
-		double[][] pValueSteering = MyNN.processInput(VectorSteering).getArray();
+		double[][] pValueSteering = MyNNSteer.processInput(VectorSteering).getArray();
 		// assuming the NN will return "a matrix" 1x1, so one value
 		// in case we decide to output 2 values, e.g. steering and accelaration/breaking
 		// then we have to change this.
@@ -132,21 +157,12 @@ public class DefaultDriver extends AbstractDriver {
 
 	public String getDriverName() {
 
-		return "MMJ-controller-v0.1";
-	}
-
-	public void controlQualification(Action action, SensorModel sensors) {
-		action.clutch = 1;
-		action.steering =  Math.random() * (1 - -1)  -1;
-		action.accelerate = 5;
-		action.brake = 0;
-		System.out.println("controlQualification...");
-		//super.controlQualification(action, sensors);
+		return driverID + "_MMJ-controller-v1.0";
 	}
 
 	public void initialize(){
 
-		if (DefaultDriverAlgorithm.useNN) {
+		if (this.useNN) {
 			this.recover = new AutoRecover();
 			this.enableExtras(new AutomatedClutch());
 			this.enableExtras(new AutomatedGearbox());
@@ -163,7 +179,7 @@ public class DefaultDriver extends AbstractDriver {
 
 	// this is the default controller that Ali built
 	public void control(Action action, SensorModel sensors) {
-		System.out.println("I'm in control race now");
+		// System.out.println("I'm in control race now");
 		// Example of a bot that drives pretty well; you can use this to generate data
 		// Example of a bot that drives pretty well; you can use this to generate data
 		action.steering = DriversUtils.alignToTrackAxis(sensors, 0.5);
@@ -191,59 +207,26 @@ public class DefaultDriver extends AbstractDriver {
 			logSensorAction(action, sensors);
 		}
 
-		// action = this.auxDriver.aux_control(sensors);
-		// System.out.println(action.steering +"steering");
-		// System.out.println(action.accelerate + "acceleration");
-		// System.out.println(action.brake + "brake");
-		// if in training or retrain mode
-		if (DefaultDriverAlgorithm.trainNN || DefaultDriverAlgorithm.retrainNN) {
+		if (this.trainNN) {
 			this.trainNeuralNetwork(action, sensors);
 		}
 
-		if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN && !DefaultDriverAlgorithm.retrainNN) {
+		if (this.useNN && !this.trainNN) {
 			// recovering? don't use NN values
 			 if (this.recover.getStuck() > 10) {
 				System.out.println("*** Autorecovery in action, not using NN values ***");
 			} else {
-				useNeuralNetwork(action, sensors);
-			}
-		}
-	}
-
-	// wordt elke 10 mm seconde aangeroepen --> Action terugsturen naar game server
-	public void custom_control(Action action, SensorModel sensors) {
-
-		boolean logData = false;
-		System.out.println("In custom control method...");
-		// if(getStage() == cicontest.torcs.client.Controller.Stage.PRACTICE){
-		// this.controlWarmUp(action, sensors); // dit zorgt ervoor dat de auto op de weg blijft --> al een goede chauffeur. Rijdt over de track
-
-		// action = this.auxDriver.aux_control(sensors);
-
-		if (logData) {
-			logSensorAction(action, sensors);
-		}
-		// if in training or retrain mode
-		if (DefaultDriverAlgorithm.trainNN || DefaultDriverAlgorithm.retrainNN) {
-			this.trainNeuralNetwork(action, sensors);
-		}
-
-		// recovering? don't use NN values
-		if (this.recover.getStuck() > 10) {
-			System.out.println("*** Autorecovery in action, not using NN values ***");
-		} else {
-			if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN && !DefaultDriverAlgorithm.retrainNN) {
-				useNeuralNetwork(action, sensors);
+				 useNeuralNetwork(action, sensors);
 			}
 		}
 	}
 
 	private void trainNeuralNetwork(Action action, SensorModel sensors) {
 
-		DefaultDriverAlgorithm.epochs++;
+		this.epochs++;
 		Matrix inputVectorSteering = createNNInputSteering(sensors); //
 		Matrix target = createNNTarget(action.steering);
-		double pValueSteering = MyNN.trainNN(inputVectorSteering, target);
+		double pValueSteering = MyNNSteer.trainNN(inputVectorSteering, target);
 		System.out.println("pValueSteering <=> targetValue = " + pValueSteering + " <=> " + action.steering);
 
 		// accelerating network --> assume that acceleration is based on steering, so we give the steering value as input to the network
@@ -261,7 +244,7 @@ public class DefaultDriver extends AbstractDriver {
 
 		double psteer = this.getSteering(sensors);
 		// double paccelerate = this.getAcceleration(sensors);
-		System.out.println("*** USE VALUE FOR Steering using pValue (pred <=> target) " + psteer + " <=> " + action.steering);
+		// System.out.println("*** USE VALUE FOR Steering using pValue (pred <=> target) " + psteer + " <=> " + action.steering);
 		// System.out.println("*** USE VALUE FOR Acceleration using pValue (pred <=> target) " + paccelerate + " <=> " + action.accelerate);
 		action.steering = psteer;
 		// action.accelerate = paccelerate;
@@ -346,9 +329,11 @@ public class DefaultDriver extends AbstractDriver {
 	}
 
 	public void exit() {
-		this.storeNN(this.MyNN, this.output_dir + this.nn_mem_file_steer);
-		this.storeNN(this.MyNNAcc, this.output_dir + this.nn_mem_file_acc);
-		System.out.println("Exit...");
+		if (this.trainNN) {
+			this.storeNN(this.MyNNSteer, this.output_dir + this.nn_mem_file_steer);
+			this.storeNN(this.MyNNAcc, this.output_dir + this.nn_mem_file_acc);
+			System.out.println("Exit...");
+		}
 	}
 
 	public void shutdown() {
@@ -372,10 +357,11 @@ public class DefaultDriver extends AbstractDriver {
 	}
 
 	// Load a neural network from memory
-	public NeuralNetwork loadNN(String inFile) {
+	public static NeuralNetwork loadNN(String inFile) {
 
 		// Read from disk using FileInputStream
-		FileInputStream f_in = null;
+		InputStream f_in = DefaultDriver.class.getResourceAsStream(inFile);
+		
 		try {
 			f_in = new FileInputStream(inFile);
 		} catch (FileNotFoundException e) {
