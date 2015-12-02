@@ -172,4 +172,8 @@ class NetworkLayer implements Serializable {
 		int N = a.getRowDimension();
 		return "(" + N + ", " + M + ")";
 	}
+
+	public boolean isHiddenLayer() {return (this.layerType == 2);}
+
+	public boolean isOutputLayer() {return (this.layerType == 3);}
 }
