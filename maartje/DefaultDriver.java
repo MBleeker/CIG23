@@ -10,6 +10,7 @@ import cicontest.torcs.client.SensorModel;
 import cicontest.torcs.controller.extras.*;
 import cicontest.torcs.genome.IGenome;
 import race.TorcsConfiguration;
+import cicontest.algorithm.abstracts.map.TrackMap;
 
 
 /* Jorg End */
@@ -20,12 +21,14 @@ public class DefaultDriver extends AbstractDriver {
 
 	private NeuralNetwork MyNN;
 	private NeuralNetwork MyNNAcc; // This network is to be used for acceleration
+	private NeuralNetwork MyNNBreak;
 	private BufferedWriter logFile;
 	private boolean logData = true;
 	private AutoRecover recover = null;
 	String output_dir = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out";
 	String nn_mem_file_steer = "steering_nn.mem";
 	String nn_mem_file_acc = "acc_nn.mem";
+	String nn_mem_file_break = "break_nn.mem";
 
 	// SimpleDriver auxDriver = null;
 
@@ -61,6 +64,7 @@ public class DefaultDriver extends AbstractDriver {
 			System.out.println("Load NN's from memory....");
 			this.MyNN = this.loadNN(this.output_dir + nn_mem_file_steer);
 			this.MyNNAcc = this.loadNN(this.output_dir + nn_mem_file_acc);
+			this.MyNNBreak = this.loadNN(this.output_dir + nn_mem_file_break);
 			System.out.println(Arrays.deepToString(this.MyNN.outputLayer.getWeightMatrix().getArray()));
 		}
 		else {
@@ -76,6 +80,9 @@ public class DefaultDriver extends AbstractDriver {
 				this.MyNNAcc =  new NeuralNetwork();
 				this.buildNNAcc(); // This is the acceleration network
 				MyNNAcc.setLearningRate(0.01);
+				this.MyNNBreak = new NeuralNetwork();
+				this.buildNNBreak();
+				MyNNBreak.setLearningRate(0.01);
 			}
 		}
 	}
@@ -89,7 +96,7 @@ public class DefaultDriver extends AbstractDriver {
 		try {
 			System.out.println("Build layers of steering network");
 			this.MyNN.buildInputLayer(8, "tanh"); //
-			this.MyNN.buildHiddenLayer(18, "tanh");
+			this.MyNN.buildHiddenLayer(30, "tanh");
 			this.MyNN.buildOutputLayer(1, "tanh");
 		}
 		catch (NeuralNetwork.WrongBuildSequence e){
@@ -107,6 +114,30 @@ public class DefaultDriver extends AbstractDriver {
 		catch (NeuralNetwork.WrongBuildSequence e){
 			e.printStackTrace();
 		}
+
+	}
+
+	private void buildNNBreak() {
+		try {
+			System.out.println("Build layers of brake network");
+			this.MyNNBreak.buildInputLayer(8, "tanh");
+			this.MyNNBreak.buildHiddenLayer(30, "tanh");
+			this.MyNNBreak.buildOutputLayer(1, "tanh");
+		}
+		catch (NeuralNetwork.WrongBuildSequence e){
+			e.printStackTrace();
+		}
+
+	}
+	public double getBreak(SensorModel sensors) {
+		// Maartje: used exact same structure as for the getSteering
+
+		// here you can write an if statement --> if you can look ahead for such and such then --> go
+
+		Matrix VectorBreak = createNNInputBreak(sensors);
+		double[][] pValueBreak = MyNNBreak.processInput(VectorBreak).getArray();
+
+		return pValueBreak[0][0];
 
 	}
 
@@ -204,10 +235,40 @@ public class DefaultDriver extends AbstractDriver {
 
 		if (DefaultDriverAlgorithm.useNN && !DefaultDriverAlgorithm.trainNN && !DefaultDriverAlgorithm.retrainNN) {
 			// recovering? don't use NN values
-			 if (this.recover.getStuck() > 10) {
+			 if (this.recover.getStuck() > 5) {
 				System.out.println("*** Autorecovery in action, not using NN values ***");
 			} else {
-				useNeuralNetwork(action, sensors);
+
+				 useNeuralNetwork(action, sensors);
+
+
+				 //double force = 0.5;
+				 //double evadeforce = 0.5;
+
+				 //double[] sensor = sensors.getOpponentSensors();
+				 //System.out.println("Sensor to oppponents: " + sensor.toString());
+
+				 /*//if (....) {p
+					 DriversUtils du = new DriversUtils();
+					 du.evadeOpponents(action, sensors, this.trackmap, force, evadeforce);
+				 //} */
+
+				 //System.out.println("Opponents position: " + DriversUtils.getOpponentPosition(action, sensors));
+				 double[] rangeValues = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 7, 10);
+				 System.out.println("range1: " + rangeValues[0] + "range2: " + rangeValues[1] + "range3: " + rangeValues[2]);
+
+				 if (rangeValues[2] > 60)  { //this is only the real front??
+					 System.out.println("large empty part ahead of me");
+					 action.accelerate = 1.0D;
+				 }
+
+				 double[] rangeValuesBrake = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 19);
+				 System.out.println("range1: " + rangeValuesBrake[0] + "range2: " + rangeValuesBrake[1] + "range3: " + rangeValuesBrake[16] + "range4: " + (rangeValuesBrake[17]));
+				 if ((rangeValuesBrake[0] < 2 && rangeValuesBrake[1] < 2) || (rangeValuesBrake[16] < 2 && rangeValuesBrake[17] < 2) && (rangeValuesBrake[0] > 0 && rangeValuesBrake[1] > 0) && (rangeValuesBrake[16] > 0 && rangeValuesBrake[17] > 0)) {
+					 System.out.println("BREAK!!!");
+					 action.brake = 0.1D;
+				 }
+
 			}
 		}
 	}
@@ -263,10 +324,13 @@ public class DefaultDriver extends AbstractDriver {
 
 		double psteer = this.getSteering(sensors);
 		double paccelerate = this.getAcceleration(sensors);
+		//double pbreak = this.getBreak(sensors);
 		System.out.println("*** USE VALUE FOR Steering using pValue (pred <=> target) " + psteer + " <=> " + action.steering);
-		// System.out.println("*** USE VALUE FOR Acceleration using pValue (pred <=> target) " + paccelerate + " <=> " + action.accelerate);
+		//System.out.println("*** USE VALUE FOR Acceleration using pValue (pred <=> target) " + paccelerate + " <=> " + action.accelerate);
+		//System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
 		action.steering = psteer;
-		action.accelerate = paccelerate;
+		//action.accelerate = paccelerate;
+		//action.brake = pbreak;
 
 	}
 	// wordt standaard meegegeven
@@ -289,7 +353,7 @@ public class DefaultDriver extends AbstractDriver {
 		Of course also added the steering value itself
 		*/
 
-		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 5, 18); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
+		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
 		limVector = extendArraySize(limVector);
 		limVector[limVector.length-1] = sensors.getAngleToTrackAxis();
 		limVector = extendArraySize(limVector);
@@ -298,6 +362,29 @@ public class DefaultDriver extends AbstractDriver {
 		limVector[limVector.length-1] = sensors.getSpeed();
 		limVector = extendArraySize(limVector);
 		limVector[limVector.length-1] = sensors.getGear();
+		limVector = extendArraySize(limVector);
+		limVector[limVector.length-1] = getSteering(sensors);
+		return new Matrix(new double [][] {limVector}).transpose();
+	}
+
+	private Matrix createNNInputBreak(SensorModel sensors) {
+		/*
+		MAARTJE: Now I just used exactly the same values as for the steering, but playing around with this might
+		reveal that we can better use different sensor values
+		Of course also added the steering value itself
+		*/
+
+		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
+		limVector = extendArraySize(limVector);
+		limVector[limVector.length-1] = sensors.getAngleToTrackAxis();
+		limVector = extendArraySize(limVector);
+		limVector[limVector.length-1] = sensors.getTrackPosition();
+		limVector = extendArraySize(limVector);
+		limVector[limVector.length-1] = sensors.getSpeed();
+		limVector = extendArraySize(limVector);
+		limVector[limVector.length-1] = sensors.getGear();
+		limVector = extendArraySize(limVector);
+		limVector[limVector.length-1] = getSteering(sensors);
 		return new Matrix(new double [][] {limVector}).transpose();
 	}
 
@@ -318,7 +405,7 @@ public class DefaultDriver extends AbstractDriver {
 		// System.out.println(S_RangeSensors);
 		// adding 3 values
 		S_RangeSensors = S_RangeSensors + ";" + Double.toString(sensors.getAngleToTrackAxis()) + ";" + Double.toString(sensors.getTrackPosition()) + ";" + Double.toString(sensors.getSpeed());
-		// adding 5 target values
+		// adding 5 target values --> wat sturen wij naar de game controler terug
 		String Action_s = Double.toString(a.gear) + ";" + Double.toString(a.steering) + ";" + Double.toString(a.accelerate) + ";" + Double.toString(a.brake) + ";" + Double.toString(a.clutch);
 
 		String OutPut = S_RangeSensors + ";" + Action_s;
