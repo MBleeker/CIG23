@@ -1,0 +1,4 @@
+Dit is een readme file waar ik wat beschrijvingen geef over hoe je de files op de server
+moet submitten. 
+
+ 
