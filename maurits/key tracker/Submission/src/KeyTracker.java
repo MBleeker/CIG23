@@ -20,7 +20,7 @@ public class KeyTracker extends JFrame implements KeyListener {
         p.add(label);
         add(p);
         addKeyListener(this);
-        setSize(100, 200);
+        setSize(200, 200);
         setVisible(true);
         keyMap.put("Right", 0);
         keyMap.put("Left", 0);
@@ -31,20 +31,16 @@ public class KeyTracker extends JFrame implements KeyListener {
     void setKeyEvent(KeyEvent e){
     	System.out.println("test");
     	if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            System.out.println("Right key pressed");
             this.keyEvent =  "Right";
         }
         if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-            System.out.println("Left key pressed");
             this.keyEvent = "Left";
     		
         }
         if (e.getKeyCode() == KeyEvent.VK_UP) {
-            System.out.println("Up key pressed");
             this.keyEvent = "Up";
         }
         if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-            System.out.println("Down key pressed");
             this.keyEvent = "Down";
         }
     }
@@ -90,22 +86,18 @@ public class KeyTracker extends JFrame implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
     	if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-    		 System.out.println("Right key pressed");
     		keyMap.put("Right", 1);
     		keyMap.put("Left", 0);
         }
     	if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-    		 System.out.println("Left key pressed");
     		 keyMap.put("Left", 1);
     		 keyMap.put("Right", 0);
         }
     	if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-    		 System.out.println("Down key pressed");
     		keyMap.put("Down", 1);
     		keyMap.put("Up", 0);
         }
     	if (e.getKeyCode() == KeyEvent.VK_UP) {
-    		 System.out.println("Down key pressed");
     		 keyMap.put("Up", 1);
     		 keyMap.put("Down", 0);
         }

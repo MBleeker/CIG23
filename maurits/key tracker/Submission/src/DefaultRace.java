@@ -14,6 +14,7 @@ public class DefaultRace extends AbstractRace {
 		return runQualification(driversList, withGUI);
 	}
 
+
 	
 	public int[] runRace(DefaultDriverGenome[] drivers, boolean withGUI){
 		System.out.println("in run race new class");

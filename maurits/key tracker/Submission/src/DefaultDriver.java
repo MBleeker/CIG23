@@ -11,6 +11,7 @@ import cicontest.torcs.client.SensorModel;
 import cicontest.torcs.controller.extras.*;
 import cicontest.torcs.genome.IGenome;
 import race.TorcsConfiguration;
+import cicontest.torcs.race.RaceResults;
 
 
 
@@ -25,14 +26,19 @@ public class DefaultDriver extends AbstractDriver {
 	private NeuralNetwork MyNNAcc; // This network is to be used for acceleration
 	private BufferedWriter logFile;
 	private boolean logData = true;
+	private boolean firstMeasurement = true;
+	private boolean logOpponents;
 	private AutoRecover recover = null;
-	public static String OUTPUT_DIR = "memory/";
+	public static String OUTPUT_DIR = "memory/new_training_data_EA/";
 	public String output_dir;
 	String nn_mem_file_steer = "DefaultDriver.mem";
 	String nn_mem_file_acc = "nn_accelerate.mem";
 	Boolean useNN;
 	Boolean trainNN;
+	Boolean isFinished; 
+	Boolean raceStarted;
 	Boolean keyTracking;
+	double startDistanceFromFinish;
 	KeyTracker keyTrack;
 	Double currentSteering;
 	int epochs = 0;
@@ -44,8 +50,11 @@ public class DefaultDriver extends AbstractDriver {
 	public DefaultDriver() {
 
 		this.useNN = false;
+		this.logOpponents = true;
 		this.trainNN = false;
 		this.keyTracking = true;
+		this.isFinished = false;
+		this.raceStarted = false;
 		this.currentSteering = 0.0;
 		
 		// System.out.println("Use NN " + this.useNN);
@@ -60,7 +69,7 @@ public class DefaultDriver extends AbstractDriver {
 		}
 		// this.output_dir = "memory/";
 		// add "output_dir" to torcs_properties file
-		String filename = output_dir + "train_nn_data.dat";
+		String filename = output_dir + "train_nn_data-test-v18.dat";
 
 		// initialize neural networks
 		this.getNeuralNetworks();
@@ -70,9 +79,10 @@ public class DefaultDriver extends AbstractDriver {
 			try {
 				FileWriter fwriter = new FileWriter(filename, false);
 				logFile = new BufferedWriter(fwriter);
-				String Header = "9rangeValues;angleToTrackAxis,trackPosition;gear;steering;accelerate;brake;clutch";
+				String Header = "9rangeValues;angleToTrackAxis,trackPosition;36opponentsSensorDatagear;steering;accelerate;brake;clutch";
 				logFile.write(Header);
 				logFile.newLine();
+				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -138,7 +148,7 @@ public class DefaultDriver extends AbstractDriver {
 
 	public double getAcceleration(SensorModel sensors) {
 		// Maartje: used exact same structure as for the getSteering
-
+		
 		Matrix VectorAcceleration = createNNInputAccelerate(sensors);
 		double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
 
@@ -213,7 +223,20 @@ public class DefaultDriver extends AbstractDriver {
 			}
 		}
 		if (logData) {
-			logSensorAction(action, sensors);
+			if(sensors.getDistanceFromStartLine() > 6 && sensors.getDistanceFromStartLine() <= 10){
+				this.raceStarted = true;
+			}
+			if(sensors.getDistanceFromStartLine() <=  5 && this.raceStarted){
+				this.isFinished = true;
+			}
+			
+			if(!this.logOpponents){
+				logSensorAction(action, sensors);
+			}
+			else if(this.logOpponents  && !this.isFinished){
+				logSensorActionEA(action, sensors);
+			}
+			
 		}
 
 		if (this.trainNN) {
@@ -232,11 +255,9 @@ public class DefaultDriver extends AbstractDriver {
 				if (this.keyTrack.getRightSteering() == 1) {
 					this.currentSteering += 0.25;
 					action.steering = this.currentSteering  ;
-					System.out.println("right");
 				}
 				else if (this.keyTrack.getLeftSteering() == 1) {
 					this.currentSteering -= 0.25;
-					System.out.println("left");
 					action.steering = this.currentSteering  ;
 				} 
 				else {
@@ -244,12 +265,10 @@ public class DefaultDriver extends AbstractDriver {
 				}
 				
 				if(this.keyTrack.accelerate() == 1){
-					System.out.println("speed");
 					action.accelerate = 1.0D;
 					action.brake = 0.0D;
 				}
 				else if(this.keyTrack.doBreake() == 1){
-					System.out.println("break");
 					action.accelerate = 0.0D;
 					action.brake = 1.0D;
 					
@@ -353,7 +372,44 @@ public class DefaultDriver extends AbstractDriver {
 			e.printStackTrace();
 		}
 	}
+	
+	/* Jorg: added new method to log sensor data and action data of car */ // --> dit heeft jorg gebouwd om training data te verkrijgen
+	private void logSensorActionEA(Action a, SensorModel sensors){
+		System.out.println("*** Log Evo-data ***");
+		//System.out.println(sensors.getDistanceFromStartLine());
+		// double[] RangeSensors = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 4, 13); // 9 values
+		double[] RangeSensors = sensors.getTrackEdgeSensors();
+		String S_RangeSensors = "";
+		for (double num : RangeSensors) {
+			S_RangeSensors = S_RangeSensors + ((S_RangeSensors == "") ? "" : ";") + Double.toString(num);
+		}
+		// System.out.println(S_RangeSensors);
+		// adding 3 values
+		S_RangeSensors = S_RangeSensors + ";" + Double.toString(sensors.getAngleToTrackAxis()) + ";" + Double.toString(sensors.getTrackPosition()) + ";" + Double.toString(sensors.getSpeed());
+		// adding 5 target values
+		String Action_s = Double.toString(a.gear) + ";" + Double.toString(a.steering) + ";" + Double.toString(a.accelerate) + ";" + Double.toString(a.brake) + ";" + Double.toString(a.clutch);
 
+		
+		
+		double[] OpponentSensors = sensors.getOpponentSensors();
+		
+		
+		for (double num : OpponentSensors) {
+			S_RangeSensors = S_RangeSensors + ((S_RangeSensors == "") ? "" : ";") + Double.toString(num);
+		}
+	
+		
+		String OutPut = S_RangeSensors + ";" + Action_s;
+		
+		try {
+			logFile.write(OutPut);
+			logFile.newLine();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
 	public void defaultControl(Action action, SensorModel sensors){
 		System.out.println("Default control...");
 		action.clutch = 1;
