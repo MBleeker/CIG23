@@ -145,13 +145,21 @@ public class NeuralNetwork implements Serializable {
 	public double trainNN(Matrix inputVector, Matrix target){
 		// this is currently not a generic method, because we assume the output is just a scalar
 		// could be also more than one value
-		//System.out.println("I should predict: " + Arrays.deepToString(target.getArray()));
 		double[][] predictedTarget = this.processInput(inputVector).getArray();
 		BackProp BP = new BackProp(this, target, this.learningRate);
 		BP.computeBackProp();
 		// remember, currently assuming NN returns one value only!
-		//System.out.println("I predict: " + predictedTarget[0][0]);
 		return predictedTarget[0][0];
+	}
+
+	public String toString(){
+		String outstr = "(";
+
+		for (NetworkLayer aLayer : this.allLayers) {
+			outstr += Integer.toString(aLayer.getNumberOfNeurons()) + " ";
+		}
+
+		return outstr;
 	}
 
 }
