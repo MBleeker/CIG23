@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import Jama.Matrix;
-
+import edu.umbc.cs.maple.utils.JamaUtils;
 /**
  * Created by Jörg on 29-11-2015.
  */
@@ -21,9 +21,10 @@ public class EATorcs {
     private static double LEARNING_RATE = 0.01;
     private static String OUTPUT_DIR = "C:\\temp\\";
     private static int MAX_COMPETITORS = 3;
+    private static String TRAININGS_FILE = "F:/temp/trainNN/train_nn_data_all.dat";
 
     // class variables
-    private double prob_mu_genome = 0.4;
+    private double prob_mu_genome = 0.6;
     private double prob_mu_weight = 0.9;
     private double prob_new_weight = 1 - prob_mu_weight;
     private int initial_pop_size;
@@ -131,21 +132,33 @@ public class EATorcs {
 
     }
 
+    public void registerFitness(){
+
+
+    }
+
     public void runTournament(){
 
         DefaultDriver[] drivers = new DefaultDriver[MAX_COMPETITORS];
         this.survivors = new ArrayList<>();
-        this.tt = new Tournament("road", "aalborg", 1);
+        // this.tt = new Tournament("road", "aalborg", 1);
+        this.tt = new Tournament("dirt-1", "dirt", 1);
         Collections.shuffle(this.population);
 
         int i = 0;
         int total = 0;
-        for (DefaultDriver dd: this.population) {
-            drivers[i] = dd;
+        for (int j = 0; j < this.population.size(); j++) {
+            drivers[i] = this.population.get(j);
             i++;
             total++;
             if (i == MAX_COMPETITORS || (this.population.size() == total )) {
                 tt.run(drivers, true);
+                int[] fitness = this.tt.getResults();
+                this.tt.printResults();
+                for (int jj=0; jj < drivers.length; jj++){
+                    drivers[jj].fittness = fitness[jj];
+                    System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + fitness[jj]);
+                }
                 i = 0;
                 if ( this.population.size() - total < MAX_COMPETITORS ) {
                     System.out.println("Last tournament with " + (this.population.size() - total) + " drivers.");
@@ -153,9 +166,11 @@ public class EATorcs {
                 } else {
                     drivers = new DefaultDriver[MAX_COMPETITORS];
                 }
-                this.tt.printResults();
-
             }
+        }
+        for (DefaultDriver dd: this.population) {
+            System.out.println("Again....");
+            System.out.println("Driver: " + dd.getDriverName() + " fitness: " + dd.fittness);
         }
     }
 
@@ -163,7 +178,17 @@ public class EATorcs {
 
     }
 
-    public void addNodeToHiddenLayer(NeuralNetwork nn) {
+    public NeuralNetwork trainNetwork(NeuralNetwork nn, double learning_rate){
+
+        nn.setLearningRate(learning_rate);
+        NeuralNetworkUtils helper = new NeuralNetworkUtils(nn);
+        helper.train_data = helper.getInputFile(TRAININGS_FILE);
+        double MSE = helper.trainNeuralNetwork();
+        System.out.println("Trained network with LR " + learning_rate + " Architecture: " + nn.toString() + " / MSE = " + MSE);
+        return helper.MyNN;
+    }
+
+    public NeuralNetwork addNodeToHiddenLayer(NeuralNetwork nn) {
 
         /*
         Basically if a new hidden layer node is added we need to add:
@@ -172,22 +197,33 @@ public class EATorcs {
             NOTE: the method ASSUMES that our networks have 1 HIDDEN LAYER!!!!
          */
         int n, m;
-        for (NetworkLayer aLayer : nn.allLayers) {
-            if (aLayer.getWeightMatrix() != null) {
-                n = aLayer.getWeightMatrix().getRowDimension();
-                m = aLayer.getWeightMatrix().getColumnDimension();
+        JamaUtils helper = new JamaUtils();
+        for (int i=0; i < nn.allLayers.size(); i++) {
+            if (nn.allLayers.get(i).getWeightMatrix() != null) {
+                n = nn.allLayers.get(i).getWeightMatrix().getRowDimension();
+                m = nn.allLayers.get(i).getWeightMatrix().getColumnDimension();
 
-                if (aLayer.isHiddenLayer()){
+                if (nn.allLayers.get(i).isHiddenLayer()){
                     Matrix row = Matrix.random(1, m);
-
+                    //System.out.println("HL: Dim old matrix " + NeuralNetworkUtils.getDimMatrix(aLayer.getWeightMatrix()));
+                    //System.out.println("HL: Dim row vector " + NeuralNetworkUtils.getDimMatrix(row));
+                    nn.allLayers.get(i).setWeightMatrix(helper.rowAppend(nn.allLayers.get(i).getWeightMatrix() , row));
+                    nn.allLayers.get(i).setNumberOfNeurons(n+1);
+                    //System.out.println("HL: Dim new matrix " + NeuralNetworkUtils.getDimMatrix(aLayer.getWeightMatrix()));
 
                 } else {
-                    if (aLayer.isOutputLayer()) {
+                    if (nn.allLayers.get(i).isOutputLayer()) {
+                        Matrix column = Matrix.random(n, 1);
+                        //System.out.println("OL: Dim old matrix " + NeuralNetworkUtils.getDimMatrix(aLayer.getWeightMatrix()));
+                        //System.out.println("OL: Dim row vector " + NeuralNetworkUtils.getDimMatrix(column));
+                        nn.allLayers.get(i).setWeightMatrix(helper.columnAppend(nn.allLayers.get(i).getWeightMatrix(), column));
+                        System.out.println("OL: Dim new matrix " + NeuralNetworkUtils.getDimMatrix(nn.allLayers.get(i).getWeightMatrix()));
 
                     }
                 }
             }
         }
+        return nn;
     }
 
     public void perturbateWeights(NetworkLayer nnLayer){
@@ -213,6 +249,14 @@ public class EATorcs {
         nnLayer.setWeightMatrix(new Matrix(hx));
     }
 
+    public double mutateLearningRate(){
+
+        double lr, pert;
+        if (Math.random() < 0.5) { pert = -0.001;} else {pert = 0.001;}
+        lr = LEARNING_RATE + (pert * Math.random());
+        return lr;
+    }
+
     public void mutateGenome(){
 
         /*
@@ -220,9 +264,12 @@ public class EATorcs {
          */
         for (int i=0; i< this.population.size() ; i++) {
             if (Math.random() < prob_mu_genome) {
-                System.out.println("Mutate weights for driver " + i);
+                System.out.println("Mutate weights for driver " + population.get(i).getDriverName());
                 // population.get(i).MyNNSteer.outputLayer.setWeightMatrix(this.perturbateWeights( population.get(i).MyNNSteer.outputLayer.getWeightMatrix()));
+                population.get(i).MyNNSteer = this.addNodeToHiddenLayer(population.get(i).MyNNSteer);
                 this.perturbateWeights(population.get(i).MyNNSteer.outputLayer);
+                double learning_rate = this.mutateLearningRate();
+                population.get(i).MyNNSteer = this.trainNetwork(population.get(i).MyNNSteer, learning_rate);
             }
         }
 

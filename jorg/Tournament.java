@@ -38,7 +38,7 @@ public class Tournament  {
 
         for (int i=0; i < driversList.length; i++) {
             race.addCompetitor(driversList[i]);
-            System.out.println("Driver ID " + driversList[i].driverID);
+            System.out.println("Driver " + driversList[i].getDriverName());
         }
 
         if(withGUI) {
@@ -46,8 +46,8 @@ public class Tournament  {
         }  else {
             results = race.run();
         }
-        race.waitforFinish();
-        race.updatePositions();
+        // race.waitforFinish();
+        // race.updatePositions();
 
     }
 
@@ -63,8 +63,10 @@ public class Tournament  {
 
     public int[] getResults(){
 
+        fitness = new int[this.drivers.length];
         for(int i = 0; i < this.drivers.length; ++i) {
             fitness[i] = ((RaceResult)this.results.get(this.drivers[i])).getPosition();
+            System.out.println(drivers[i].getDriverName() + " = " + fitness[i] + " distance: " + ((RaceResult)this.results.get(this.drivers[i])).getDistance());
         }
 
         return fitness;
@@ -75,7 +77,7 @@ public class Tournament  {
         System.out.println(this.race.getTrackName() + " (" + this.race.getTerminationValue() + " laps)");
 
         for(int i = 0; i < this.drivers.length; ++i) {
-            System.out.println("(" + ((RaceResult)this.results.get(drivers[i])).getPosition() + ") laptime: " + ((RaceResult)this.results.get(drivers[i])).getBestLapTime());
+            System.out.println(" Driver " + drivers[i].getDriverName() + " (" + ((RaceResult)this.results.get(drivers[i])).getPosition() + ") laptime: " + ((RaceResult)this.results.get(drivers[i])).getBestLapTime());
             System.out.println("Last lap-time " + this.results.get(drivers[i]).getLastlap() + " / Is finished " + this.results.get(drivers[i]).isFinished());
         }
 

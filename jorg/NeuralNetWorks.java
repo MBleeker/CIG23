@@ -144,7 +144,7 @@ public class NeuralNetWorks {
 	public NeuralNetwork loadNN(String inFile) {
 
 		// Read from disk using FileInputStream
-		FileInputStream f_in = null;
+		InputStream f_in = DefaultDriver.class.getResourceAsStream(inFile);
 		try {
 			f_in = new FileInputStream(inFile);
 		} catch (FileNotFoundException e) {
