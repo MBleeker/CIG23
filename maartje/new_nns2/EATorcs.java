@@ -19,9 +19,9 @@ public class EATorcs {
     private static int NUM_OF_OUTPUT_UNITS = 1;
     private static String ACTIVATION_FUNCTION = "tanh";
     private static double LEARNING_RATE = 0.01;
-    private static String OUTPUT_DIR = "C:\\temp\\";
+    private static String OUTPUT_DIR = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/";
     private static int MAX_COMPETITORS = 3;
-    private static String TRAININGS_FILE = "F:/temp/trainNN/train_nn_data_all.dat";
+    private static String TRAININGS_FILE = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/trainNN/train_nn_data_all.dat";
 
     // class variables
     private double prob_mu_genome = 0.6;
@@ -41,7 +41,7 @@ public class EATorcs {
 
         this.setInitial_pop_size(pop_size);
         population = new ArrayList<>();
-        this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("mem_location");
+        this.output_dir = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/";
         if (output_dir.trim() == "") {
             output_dir = OUTPUT_DIR;
         }
@@ -277,7 +277,7 @@ public class EATorcs {
 
     public static void main(String[] args){
 
-        TorcsConfiguration.getInstance().initialize(new File("F:\\java\\IdeaProjects\\TorcsController\\out\\production\\torcs.properties"));
+        TorcsConfiguration.getInstance().initialize(new File("C:/Users/Maartje/Documents/Studie/master/ci/project/files/torcs.properties"));
         EATorcs EA = new EATorcs(MAX_COMPETITORS);
         EA.initializePopulation();
         EA.runTournament();

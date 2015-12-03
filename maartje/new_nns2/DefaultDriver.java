@@ -172,11 +172,11 @@ public class DefaultDriver extends AbstractDriver {
 
 		// here you can write an if statement --> if you can look ahead for such and such then --> go
 
-		Matrix VectorAcceleration = createNNInputAccelerate(sensors);
-		double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
+		//Matrix VectorAcceleration = createNNInputAccelerate(sensors);
+		//double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
 
-		return pValueAcceleration[0][0];
-		//return 1;
+		//return pValueAcceleration[0][0];
+		return 1;
 	}
 	public double getSteering(SensorModel sensors){
 
@@ -313,13 +313,13 @@ public class DefaultDriver extends AbstractDriver {
 
 		double psteer = this.getSteering(sensors);
 		double paccelerate = this.getAcceleration(sensors);
-		double pbreak = this.getBreak(sensors);
+		//double pbreak = this.getBreak(sensors);
 		System.out.println("*** USE VALUE FOR Steering using pValue (pred <=> target) " + psteer + " <=> " + action.steering);
 		System.out.println("*** USE VALUE FOR Acceleration using pValue (pred <=> target) " + paccelerate + " <=> " + action.accelerate);
-		System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
+		//System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
 		action.steering = psteer;
 		action.accelerate = paccelerate;
-		action.brake = pbreak;
+		//action.brake = pbreak;
 
 	}
 	// wordt standaard meegegeven
