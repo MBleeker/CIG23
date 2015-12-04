@@ -155,9 +155,9 @@ public class EATorcs {
                 tt.run(drivers, true);
                 int[] fitness = this.tt.getResults();
                 this.tt.printResults();
-                for (int jj=0; jj < drivers.length; jj++){
-                    drivers[jj].fittness = fitness[jj];
-                    System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + fitness[jj]);
+               for (int jj=0; jj < drivers.length; jj++){
+                    System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + drivers[jj].fitness);
+                    System.out.println("Driver: " + drivers[jj].getDriverName() + " bestLap: " + drivers[jj].bestLap);
                 }
                 i = 0;
                 if ( this.population.size() - total < MAX_COMPETITORS ) {
@@ -168,10 +168,7 @@ public class EATorcs {
                 }
             }
         }
-        for (DefaultDriver dd: this.population) {
-            System.out.println("Again....");
-            System.out.println("Driver: " + dd.getDriverName() + " fitness: " + dd.fittness);
-        }
+
     }
 
     public void selectParents(){

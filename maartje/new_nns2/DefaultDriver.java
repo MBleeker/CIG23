@@ -35,7 +35,9 @@ public class DefaultDriver extends AbstractDriver {
 	Boolean trainNN;
 	int epochs = 0;
 	String driverID = "default";
-	int fittness = 0;
+	int fitness = 0;
+	double bestLap;
+	double damage;
 
 	public DefaultDriver(String ID){
 
@@ -288,6 +290,7 @@ public class DefaultDriver extends AbstractDriver {
 
 			}
 		}
+		this.setResults(sensors);
 	}
 
 	private void trainNeuralNetwork(Action action, SensorModel sensors) {
@@ -407,14 +410,11 @@ public class DefaultDriver extends AbstractDriver {
 		}
 	}
 
-	public void defaultControl(Action action, SensorModel sensors){
-		System.out.println("Default control...");
-		action.clutch = 1;
-		action.steering =  Math.random() * (1 - -1)  -1;
-		action.accelerate = 1;
-		action.brake = 0;
-		System.out.println("defaultControl");
-		//super.defaultControl(action, sensors);
+	public void setResults(SensorModel sensors) {
+
+		this.bestLap = sensors.getLastLapTime();
+		this.fitness = sensors.getRacePosition();
+		this.damage = sensors.getDamage();
 	}
 
 	private static double[] extendArraySize(double [] array){
