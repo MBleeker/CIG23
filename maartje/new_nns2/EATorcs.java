@@ -92,8 +92,15 @@ public class EATorcs {
                     dd.MyNNSteer = DefaultDriver.loadNN(abs_path);
                     break;
                 case "accelerate":
+                    System.out.println("loading accelering network");
                     this.mem_files[1][i-1] = this.output_dir + i + "_" + inFile;
                     dd.MyNNAcc = DefaultDriver.loadNN(abs_path);
+                    break;
+                case "break":
+                    System.out.println("loading braking network");
+                    this.mem_files[1][i-1] = this.output_dir + i + "_" + inFile;
+                    dd.MyNNBreak = DefaultDriver.loadNN(abs_path);
+                    System.out.println("yooo "+ dd.MyNNBreak);
                     break;
             }
             System.out.println(i + " mem file " + abs_path);
@@ -112,6 +119,9 @@ public class EATorcs {
                 case "accelerate":
                     population.get(i).storeNN(population.get(i).MyNNAcc, this.mem_files[1][i]);
                     break;
+                case "break":
+                    population.get(i).storeNN(population.get(i).MyNNBreak, this.mem_files[1][i]);
+                    break;
             }
         }
     }
@@ -128,6 +138,8 @@ public class EATorcs {
             this.population.add(driver);
         }
         this.loadNetworks("steering_nn.mem", "steering", true);
+        this.loadNetworks("acc_nn.mem", "accelerate", true);
+        this.loadNetworks("break_nn.mem", "break", true);
         this.mutateGenome();
 
     }
@@ -181,6 +193,26 @@ public class EATorcs {
         NeuralNetworkUtils helper = new NeuralNetworkUtils(nn);
         helper.train_data = helper.getInputFile(TRAININGS_FILE);
         double MSE = helper.trainNeuralNetwork();
+        System.out.println("Trained network with LR " + learning_rate + " Architecture: " + nn.toString() + " / MSE = " + MSE);
+        return helper.MyNN;
+    }
+
+    public NeuralNetwork trainNetworkAcc(NeuralNetwork nn, double learning_rate){
+
+        nn.setLearningRate(learning_rate);
+        NeuralNetworkUtils helper = new NeuralNetworkUtils(nn);
+        helper.train_data = helper.getInputFile(TRAININGS_FILE);
+        double MSE = helper.trainNeuralNetworkAcc();
+        System.out.println("Trained network with LR " + learning_rate + " Architecture: " + nn.toString() + " / MSE = " + MSE);
+        return helper.MyNN;
+    }
+
+    public NeuralNetwork trainNetworkBreak(NeuralNetwork nn, double learning_rate){
+
+        nn.setLearningRate(learning_rate);
+        NeuralNetworkUtils helper = new NeuralNetworkUtils(nn);
+        helper.train_data = helper.getInputFile(TRAININGS_FILE);
+        double MSE = helper.trainNeuralNetworkBreak();
         System.out.println("Trained network with LR " + learning_rate + " Architecture: " + nn.toString() + " / MSE = " + MSE);
         return helper.MyNN;
     }
@@ -263,10 +295,24 @@ public class EATorcs {
             if (Math.random() < prob_mu_genome) {
                 System.out.println("Mutate weights for driver " + population.get(i).getDriverName());
                 // population.get(i).MyNNSteer.outputLayer.setWeightMatrix(this.perturbateWeights( population.get(i).MyNNSteer.outputLayer.getWeightMatrix()));
+                System.out.println("Mutating weights for steering network...");
                 population.get(i).MyNNSteer = this.addNodeToHiddenLayer(population.get(i).MyNNSteer);
                 this.perturbateWeights(population.get(i).MyNNSteer.outputLayer);
-                double learning_rate = this.mutateLearningRate();
-                population.get(i).MyNNSteer = this.trainNetwork(population.get(i).MyNNSteer, learning_rate);
+                double learning_rate_steer = this.mutateLearningRate();
+                population.get(i).MyNNSteer = this.trainNetwork(population.get(i).MyNNSteer, learning_rate_steer);
+
+                System.out.println("Mutating weights for accelerating network...");
+                population.get(i).MyNNAcc = this.addNodeToHiddenLayer(population.get(i).MyNNAcc);
+                this.perturbateWeights(population.get(i).MyNNAcc.outputLayer);
+                double learning_rate_acc = this.mutateLearningRate();
+                population.get(i).MyNNAcc = this.trainNetworkAcc(population.get(i).MyNNAcc, learning_rate_acc);
+
+                System.out.println("Mutating weights for braking network...");
+                System.out.println(population.get(i).MyNNBreak);
+                population.get(i).MyNNBreak = this.addNodeToHiddenLayer(population.get(i).MyNNBreak);
+                this.perturbateWeights(population.get(i).MyNNBreak.outputLayer);
+                double learning_rate_break = this.mutateLearningRate();
+                population.get(i).MyNNBreak = this.trainNetworkBreak(population.get(i).MyNNBreak, learning_rate_break);
             }
         }
 
@@ -279,6 +325,8 @@ public class EATorcs {
         EA.initializePopulation();
         EA.runTournament();
         EA.saveNetworks("steering");
+        EA.saveNetworks("accelerate");
+        EA.saveNetworks("break");
     }
 
 }

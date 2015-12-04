@@ -22,7 +22,7 @@ public class DefaultDriver extends AbstractDriver {
 
 	public NeuralNetwork MyNNSteer;
 	public NeuralNetwork MyNNAcc; // This network is to be used for acceleration
-	private NeuralNetwork MyNNBreak;
+	public NeuralNetwork MyNNBreak;
 	private BufferedWriter logFile;
 	private boolean logData = false;
 	private AutoRecover recover = null;
