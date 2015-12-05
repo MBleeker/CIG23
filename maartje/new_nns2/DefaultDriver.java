@@ -5,7 +5,6 @@ import java.util.Arrays;
 
 import cicontest.algorithm.abstracts.AbstractDriver;
 import cicontest.algorithm.abstracts.DriversUtils;
-import cicontest.algorithm.abstracts.map.TrackMap;
 import cicontest.torcs.client.Action;
 import cicontest.torcs.client.SensorModel;
 import cicontest.torcs.controller.extras.*;
@@ -58,8 +57,11 @@ public class DefaultDriver extends AbstractDriver {
 		// System.out.println("Use NN " + this.useNN);
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
-		if (output_dir.trim() == "") {
-			output_dir = OUTPUT_DIR;
+		if (this.output_dir == null) {
+			this.output_dir = OUTPUT_DIR;
+		}
+		else {
+			System.out.println("outdir " + this.output_dir);
 		}
 		// this.output_dir = "memory/";
 		// add "output_dir" to torcs_properties file
@@ -87,11 +89,12 @@ public class DefaultDriver extends AbstractDriver {
 
 		if (this.useNN) {
 			// reuse stored networks
-			System.out.println("Load NN's from memory....");
+			System.out.println("Load NN's from memory location " + this.output_dir);
 			this.MyNNSteer = this.loadNN(this.output_dir + nn_mem_file_steer);
 			this.MyNNAcc = this.loadNN(this.output_dir + nn_mem_file_acc);
 			this.MyNNBreak = this.loadNN(this.output_dir + nn_mem_file_break);
-			System.out.println(Arrays.deepToString(this.MyNNSteer.outputLayer.getWeightMatrix().getArray()));
+			System.out.println(Arrays.deepToString(this.MyNNAcc.outputLayer.getWeightMatrix().getArray()));
+			System.out.println("# neurons input layer accelerate NN " + this.MyNNAcc.inputLayer.getNumberOfNeurons());
 		}
 		else {
 			// if new networks need to be trained
@@ -174,11 +177,12 @@ public class DefaultDriver extends AbstractDriver {
 
 		// here you can write an if statement --> if you can look ahead for such and such then --> go
 
-		//Matrix VectorAcceleration = createNNInputAccelerate(sensors);
-		//double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
+		Matrix VectorAcceleration = createNNInputAccelerate(sensors);
+		// System.out.println("Size input acc matrix " + NeuralNetworkUtils.getDimMatrix(VectorAcceleration));
+		double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
 
-		//return pValueAcceleration[0][0];
-		return 1;
+		return pValueAcceleration[0][0];
+
 	}
 	public double getSteering(SensorModel sensors){
 
@@ -260,7 +264,6 @@ public class DefaultDriver extends AbstractDriver {
 
 				useNeuralNetwork(action, sensors);
 
-
 				//double force = 0.5;
 				//double evadeforce = 0.5;
 
@@ -273,10 +276,10 @@ public class DefaultDriver extends AbstractDriver {
 				 //} */
 
 				//System.out.println("Opponents position: " + DriversUtils.getOpponentPosition(action, sensors));
-				double[] rangeValues = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 7, 10);
-				System.out.println("range1: " + rangeValues[0] + "range2: " + rangeValues[1] + "range3: " + rangeValues[2]);
+				//double[] rangeValues = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 7, 10);
+				//System.out.println("range1: " + rangeValues[0] + "range2: " + rangeValues[1] + "range3: " + rangeValues[2]);
 
-				if (rangeValues[2] > 60)  { //this is only the real front??
+				/* if (rangeValues[2] > 60)  { //this is only the real front??
 					System.out.println("large empty part ahead of me");
 					action.accelerate = 1.0D;
 				}
@@ -287,7 +290,7 @@ public class DefaultDriver extends AbstractDriver {
 					System.out.println("BREAK!!!");
 					action.brake = 0.1D;
 				}
-
+				*/
 			}
 		}
 		this.setResults(sensors);
@@ -314,15 +317,35 @@ public class DefaultDriver extends AbstractDriver {
 
 	private void useNeuralNetwork(Action action, SensorModel sensors) {
 
-		double psteer = this.getSteering(sensors);
-		double paccelerate = this.getAcceleration(sensors);
-		//double pbreak = this.getBreak(sensors);
+		double psteer;
+		double paccelerate;
+		double pbreak;
+
+		psteer = this.getSteering(sensors);
+		double[] front = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 9, 12);
+		if (front[0] > 50.0 && front[1] > 100 && front[2] > 50) {
+			System.out.println("Keep going...");
+			paccelerate = 1.0;
+			pbreak = 0.0;
+		}
+		else {
+			paccelerate = this.getAcceleration(sensors);
+
+			if (paccelerate < 0) {
+				paccelerate = 0.0;
+				pbreak = (-1) * paccelerate;
+			} else {
+
+				pbreak = 0.0;
+			}
+		}
+		// double pbreak = this.getBreak(sensors);
 		System.out.println("*** USE VALUE FOR Steering using pValue (pred <=> target) " + psteer + " <=> " + action.steering);
 		System.out.println("*** USE VALUE FOR Acceleration using pValue (pred <=> target) " + paccelerate + " <=> " + action.accelerate);
-		//System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
+		System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
 		action.steering = psteer;
 		action.accelerate = paccelerate;
-		//action.brake = pbreak;
+		action.brake = pbreak;
 
 	}
 	// wordt standaard meegegeven
@@ -345,7 +368,9 @@ public class DefaultDriver extends AbstractDriver {
 		Of course also added the steering value itself
 		*/
 
-		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
+		// double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
+
+		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // 13 values
 		limVector = extendArraySize(limVector);
 		limVector[limVector.length-1] = sensors.getAngleToTrackAxis();
 		limVector = extendArraySize(limVector);
