@@ -69,7 +69,7 @@ public class DefaultDriver extends AbstractDriver {
 		}
 		// this.output_dir = "memory/";
 		// add "output_dir" to torcs_properties file
-		String filename = output_dir + "train_nn_data-test-v2.dat";
+		String filename = output_dir + "train_nn_data-test-v18.dat";
 
 		// initialize neural networks
 		this.getNeuralNetworks();
