@@ -69,7 +69,7 @@ public class DefaultDriver extends AbstractDriver {
 		}
 		// this.output_dir = "memory/";
 		// add "output_dir" to torcs_properties file
-		String filename = output_dir + "train_nn_data-test-v18.dat";
+		String filename = output_dir + "train_nn_data-test-v2.dat";
 
 		// initialize neural networks
 		this.getNeuralNetworks();
@@ -221,23 +221,9 @@ public class DefaultDriver extends AbstractDriver {
 				action.accelerate = 1.0D;
 				action.brake = 0.0D;
 			}
-		}
-		if (logData) {
-			if(sensors.getDistanceFromStartLine() > 6 && sensors.getDistanceFromStartLine() <= 10){
-				this.raceStarted = true;
-			}
-			if(sensors.getDistanceFromStartLine() <=  5 && this.raceStarted){
-				this.isFinished = true;
-			}
-			
-			if(!this.logOpponents){
-				logSensorAction(action, sensors);
-			}
-			else if(this.logOpponents  && !this.isFinished){
-				logSensorActionEA(action, sensors);
-			}
 			
 		}
+		
 
 		if (this.trainNN) {
 			this.trainNeuralNetwork(action, sensors);
@@ -279,6 +265,23 @@ public class DefaultDriver extends AbstractDriver {
 				}
 				
 			}
+			
+		if (logData) {
+			if(sensors.getDistanceFromStartLine() > 6 && sensors.getDistanceFromStartLine() <= 10){
+				this.raceStarted = true;
+			}
+			if(sensors.getDistanceFromStartLine() <=  5 && this.raceStarted){
+				this.isFinished = true;
+			}
+			
+			if(!this.logOpponents){
+				logSensorAction(action, sensors);
+			}
+			else if(this.logOpponents  && !this.isFinished){
+				logSensorActionEA(action, sensors);
+			}
+			
+		}
 		
 	}	
 
@@ -389,7 +392,7 @@ public class DefaultDriver extends AbstractDriver {
 		// adding 5 target values
 		String Action_s = Double.toString(a.gear) + ";" + Double.toString(a.steering) + ";" + Double.toString(a.accelerate) + ";" + Double.toString(a.brake) + ";" + Double.toString(a.clutch);
 
-		
+		System.out.println(Action_s);
 		
 		double[] OpponentSensors = sensors.getOpponentSensors();
 		
