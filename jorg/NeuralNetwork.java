@@ -152,4 +152,14 @@ public class NeuralNetwork implements Serializable {
 		return predictedTarget[0][0];
 	}
 
+	public String toString(){
+		String outstr = "(";
+
+		for (NetworkLayer aLayer : this.allLayers) {
+			outstr += Integer.toString(aLayer.getNumberOfNeurons()) + " ";
+		}
+
+		return outstr;
+	}
+
 }

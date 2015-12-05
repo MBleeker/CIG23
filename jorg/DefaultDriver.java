@@ -33,6 +33,7 @@ public class DefaultDriver extends AbstractDriver {
 	Boolean trainNN;
 	int epochs = 0;
 	String driverID = "default";
+	int fittness = 0;
 
 	public DefaultDriver(String ID){
 
@@ -361,7 +362,7 @@ public class DefaultDriver extends AbstractDriver {
 
 		// Read from disk using FileInputStream
 		InputStream f_in = DefaultDriver.class.getResourceAsStream(inFile);
-		
+
 		try {
 			f_in = new FileInputStream(inFile);
 		} catch (FileNotFoundException e) {

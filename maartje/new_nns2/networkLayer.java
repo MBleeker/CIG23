@@ -10,7 +10,7 @@ import Jama.Matrix;
 class NetworkLayer implements Serializable {
 	
 	private static final long serialVersionUID = 100000000000001L;
-	
+
 	private int numberOfNeurons;
 	private int layerType;
 	private Matrix weightMatrix;
@@ -39,7 +39,11 @@ class NetworkLayer implements Serializable {
 		this.typeOfActFunction = typeActFunc;
 		
 	}
-	
+
+	public void setNumberOfNeurons(int numberOfNeurons) {
+		this.numberOfNeurons = numberOfNeurons;
+	}
+
 	public Matrix getInputVector() {
 		return inputVector;
 	}
@@ -172,4 +176,8 @@ class NetworkLayer implements Serializable {
 		int N = a.getRowDimension();
 		return "(" + N + ", " + M + ")";
 	}
+
+	public boolean isHiddenLayer() {return (this.layerType == 2);}
+
+	public boolean isOutputLayer() {return (this.layerType == 3);}
 }
