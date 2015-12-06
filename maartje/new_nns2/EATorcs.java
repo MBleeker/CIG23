@@ -4,6 +4,8 @@ import race.TorcsConfiguration;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.*;
 
 import Jama.Matrix;
 import edu.umbc.cs.maple.utils.JamaUtils;
@@ -17,6 +19,9 @@ public class EATorcs {
     private static int NUM_OF_INPUT_UNITS = 15;
     private static int NUM_OF_INITIAL_HIDDEN_NODES = 10;
     private static int NUM_OF_OUTPUT_UNITS = 1;
+    private static int MIN_FITNESS = 2; // this is the fitness a driver minally needs to have to pass to the next round. This can change if you want to take damage into account for example
+    private static int TOTAL_GENERATIONS = 1;
+    private static int GENERATION_SIZE = 4; //CHANGE!!
     private static String ACTIVATION_FUNCTION = "tanh";
     private static double LEARNING_RATE = 0.01;
     private static String OUTPUT_DIR = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/";
@@ -92,7 +97,7 @@ public class EATorcs {
                     dd.MyNNSteer = DefaultDriver.loadNN(abs_path);
                     break;
                 case "accelerate":
-                    System.out.println("loading accelering network");
+                    System.out.println("loading accelerating network");
                     this.mem_files[1][i-1] = this.output_dir + i + "_" + inFile;
                     dd.MyNNAcc = DefaultDriver.loadNN(abs_path);
                     break;
@@ -138,8 +143,8 @@ public class EATorcs {
             this.population.add(driver);
         }
         this.loadNetworks("steering_nn.mem", "steering", true);
-        this.loadNetworks("acc_nn.mem", "accelerate", true);
-        this.loadNetworks("break_nn.mem", "break", true);
+        //this.loadNetworks("acc_nn.mem", "accelerate", true);
+        //this.loadNetworks("break_nn.mem", "break", true);
         this.mutateGenome();
 
     }
@@ -151,41 +156,105 @@ public class EATorcs {
 
     public void runTournament(){
 
-        DefaultDriver[] drivers = new DefaultDriver[MAX_COMPETITORS];
-        this.survivors = new ArrayList<>();
-        // this.tt = new Tournament("road", "aalborg", 1);
-        this.tt = new Tournament("dirt-1", "dirt", 1);
-        Collections.shuffle(this.population);
+        for (int generation=0; generation < TOTAL_GENERATIONS; generation++) {
 
-        int i = 0;
-        int total = 0;
-        for (int j = 0; j < this.population.size(); j++) {
-            drivers[i] = this.population.get(j);
-            i++;
-            total++;
-            if (i == MAX_COMPETITORS || (this.population.size() == total )) {
-                tt.run(drivers, true);
-                int[] fitness = this.tt.getResults();
-                this.tt.printResults();
-               for (int jj=0; jj < drivers.length; jj++){
-                    System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + drivers[jj].fitness);
-                    System.out.println("Driver: " + drivers[jj].getDriverName() + " bestLap: " + drivers[jj].bestLap);
+            DefaultDriver[] drivers = new DefaultDriver[MAX_COMPETITORS];
+            this.survivors = new ArrayList<>();
+            // this.tt = new Tournament("road", "aalborg", 1);
+            this.tt = new Tournament("dirt-1", "dirt", 1);
+            Collections.shuffle(this.population);
+
+            int i = 0;
+            int total = 0;
+            for (int j = 0; j < this.population.size(); j++) {
+                drivers[i] = this.population.get(j);
+                drivers[i].fitness = i+1; // for testing!!!!
+
+                i++;
+                total++;
+                if (i == MAX_COMPETITORS || (this.population.size() == total )) {
+                    //tt.run(drivers, true);
+                    //int[] fitness = this.tt.getResults();
+
+                    //this.tt.printResults(); // why are we doing this here??
+                    for (int jj=0; jj < drivers.length; jj++){
+                        System.out.println(drivers[jj].fitness);
+                        // parent selection
+                        if (drivers[jj].fitness <= MIN_FITNESS) {
+                            this.survivors.add(drivers[jj]);
+                        }
+
+
+
+
+                       // System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + drivers[jj].fitness);
+                       // System.out.println("Driver: " + drivers[jj].getDriverName() + " bestLap: " + drivers[jj].bestLap);
+                    }
+                    i = 0;
+                    if ( this.population.size() - total < MAX_COMPETITORS ) {
+                        System.out.println("Last tournament with " + (this.population.size() - total) + " drivers.");
+                        drivers = new DefaultDriver[this.population.size() - total];
+                    } else {
+                        drivers = new DefaultDriver[MAX_COMPETITORS];
+                    }
                 }
-                i = 0;
-                if ( this.population.size() - total < MAX_COMPETITORS ) {
-                    System.out.println("Last tournament with " + (this.population.size() - total) + " drivers.");
-                    drivers = new DefaultDriver[this.population.size() - total];
-                } else {
-                    drivers = new DefaultDriver[MAX_COMPETITORS];
-                }
+
+                //this.survivors = selectParents(drivers, this.survivors);
+            }
+
+            this.population = makeNewGeneration(this.survivors);
+        }
+
+
+
+    }
+
+    public ArrayList<DefaultDriver> makeNewGeneration(ArrayList<DefaultDriver> survivors) {
+        ArrayList<NeuralNetwork>  newGeneration = new ArrayList<>();
+        int family_members = 0;
+        for (int i=0; i<survivors.size(); i++) {
+            if (family_members <= GENERATION_SIZE) {
+                System.out.println("no family members: "+family_members);
+                family_members++;
+                NetworkLayer input = survivors.get(i).MyNNSteer.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
+                NetworkLayer hidden = survivors.get(i).MyNNSteer.getAllLayers().get(1);
+                NetworkLayer output = survivors.get(i).MyNNSteer.getAllLayers().get(2);
+                NeuralNetwork newNNSteer = new NeuralNetwork(input, hidden, output);
+                newGeneration.add(survivors.get(i).MyNNSteer);
+                newGeneration.add(newNNSteer);
+
+                // All testing:
+                /*System.out.println("old nw lr: " + survivors.get(i).MyNNSteer.getLearningRate());
+                System.out.println("new nw lr: " + newNNSteer.getLearningRate());
+
+                newNNSteer.setLearningRate(5);
+                System.out.println("old nw lr after adaptation: " + survivors.get(i).MyNNSteer.getLearningRate());
+                System.out.println("new nw lr after adaptation: " + newNNSteer.getLearningRate()); */
+
+
+
             }
         }
 
+        return survivors;
     }
 
-    public void selectParents(){
+    /*
+     * Input:   all drivers of the tournament
+     *          After one round tournament this method is called. It selects the best parents, based on the outcome of one round
+     */
+    /*public ArrayList selectParents(DefaultDriver[] drivers, ArrayList survivors) {
 
-    }
+        System.out.println("drivers: " + drivers);
+        System.out.println("survivors: " + survivors);
+        int no_drivers = drivers.length;
+        for (int driver=0; driver<no_drivers; driver++) {
+            if (drivers[driver].fitness <= MIN_FITNESS) {
+                survivors.add(drivers[driver]);
+            }
+        }
+        return survivors;
+    } */
 
     public NeuralNetwork trainNetwork(NeuralNetwork nn, double learning_rate){
 
@@ -301,7 +370,7 @@ public class EATorcs {
                 double learning_rate_steer = this.mutateLearningRate();
                 population.get(i).MyNNSteer = this.trainNetwork(population.get(i).MyNNSteer, learning_rate_steer);
 
-                System.out.println("Mutating weights for accelerating network...");
+                /*System.out.println("Mutating weights for accelerating network...");
                 population.get(i).MyNNAcc = this.addNodeToHiddenLayer(population.get(i).MyNNAcc);
                 this.perturbateWeights(population.get(i).MyNNAcc.outputLayer);
                 double learning_rate_acc = this.mutateLearningRate();
@@ -312,7 +381,7 @@ public class EATorcs {
                 population.get(i).MyNNBreak = this.addNodeToHiddenLayer(population.get(i).MyNNBreak);
                 this.perturbateWeights(population.get(i).MyNNBreak.outputLayer);
                 double learning_rate_break = this.mutateLearningRate();
-                population.get(i).MyNNBreak = this.trainNetworkBreak(population.get(i).MyNNBreak, learning_rate_break);
+                population.get(i).MyNNBreak = this.trainNetworkBreak(population.get(i).MyNNBreak, learning_rate_break);*/
             }
         }
 
@@ -325,8 +394,8 @@ public class EATorcs {
         EA.initializePopulation();
         EA.runTournament();
         EA.saveNetworks("steering");
-        EA.saveNetworks("accelerate");
-        EA.saveNetworks("break");
+        //EA.saveNetworks("accelerate");
+        //EA.saveNetworks("break");
     }
 
 }
