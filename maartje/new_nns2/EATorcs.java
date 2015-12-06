@@ -26,7 +26,7 @@ public class EATorcs {
     private static int NUM_OF_INITIAL_HIDDEN_NODES = 10;
     private static int NUM_OF_OUTPUT_UNITS = 1;
     private static int MIN_FITNESS = 2; // this is the fitness a driver minally needs to have to pass to the next round. This can change if you want to take damage into account for example
-    private static int TOTAL_GENERATIONS = 1;
+    private static int TOTAL_GENERATIONS = 3;
     private static int GENERATION_SIZE = 4; //CHANGE!!
     private static String ACTIVATION_FUNCTION = "tanh";
     private static double LEARNING_RATE = 0.01;
@@ -153,6 +153,15 @@ public class EATorcs {
         //this.loadNetworks("break_nn.mem", "break", true);
         this.mutateGenome();
 
+    }
+
+    public void loadAndMutate() {
+        System.out.println("Loading networks...");
+        this.loadNetworks("steering_nn.mem", "steering", true);
+        //this.loadNetworks("acc_nn.mem", "accelerate", true);
+        //this.loadNetworks("break_nn.mem", "break", true);
+        System.out.println("Mutating Genome...");
+        this.mutateGenome();
     }
 
     public void registerFitness(){
@@ -409,8 +418,12 @@ public class EATorcs {
         TorcsConfiguration.getInstance().initialize(new File("C:/Users/Maartje/Documents/Studie/master/ci/project/files/torcs.properties"));
         EATorcs EA = new EATorcs(MAX_COMPETITORS);
         EA.initializePopulation();
-        EA.runTournament();
-        EA.saveNetworks("steering");
+        for (int i=0; i<=TOTAL_GENERATIONS; i++) {
+            System.out.println("generation: " + i);
+            EA.runTournament();
+            EA.saveNetworks("steering");
+            EA.loadAndMutate();
+        }
         //EA.saveNetworks("accelerate");
         //EA.saveNetworks("break");
     }
