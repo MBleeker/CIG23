@@ -26,7 +26,7 @@ public class EATorcs {
     private static int NUM_OF_INITIAL_HIDDEN_NODES = 10;
     private static int NUM_OF_OUTPUT_UNITS = 1;
     private static int MIN_FITNESS = 2; // this is the fitness a driver minally needs to have to pass to the next round. This can change if you want to take damage into account for example
-    private static int TOTAL_GENERATIONS = 3;
+    private static int TOTAL_GENERATIONS = 2;
     private static int GENERATION_SIZE = 4; //CHANGE!!
     private static String ACTIVATION_FUNCTION = "tanh";
     private static double LEARNING_RATE = 0.01;
@@ -181,14 +181,14 @@ public class EATorcs {
             int total = 0;
             for (int j = 0; j < this.population.size(); j++) {
                 drivers[i] = this.population.get(j);
-                drivers[i].fitness = i+1; // for testing!!!!
+                //drivers[i].fitness = i+1; // for testing!!!!
 
                 i++;
                 total++;
                 if (i == MAX_COMPETITORS || (this.population.size() == total )) {
                     System.out.println("Starting new tournament...");
-                    //tt.run(drivers, true);
-                    //int[] fitness = this.tt.getResults();
+                    tt.run(drivers, true);
+                    int[] fitness = this.tt.getResults();
 
                     //this.tt.printResults(); // why are we doing this here??
                     for (int jj=0; jj < drivers.length; jj++){
@@ -244,9 +244,34 @@ public class EATorcs {
 
                 driver = new DefaultDriver(Integer.toString(i));
                 driver.MyNNSteer = oldNNSteer;
-                population.add(driver);
+
                 driver2 = new DefaultDriver(Integer.toString(i+1));
                 driver2.MyNNSteer = newNNSteer;
+
+
+
+                /*// Acc network
+                NeuralNetwork oldNNAcc = survivors.get(i).MyNNAcc;
+                NetworkLayer inputAcc = oldNNAcc.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
+                NetworkLayer hiddenAcc = oldNNAcc.getAllLayers().get(1);
+                NetworkLayer outputAcc = oldNNAcc.getAllLayers().get(2);
+                NeuralNetwork newNNAcc = new NeuralNetwork(inputAcc, hiddenAcc, outputAcc);
+
+                driver.MyNNAcc = oldNNAcc;
+                driver2.MyNNAcc = newNNAcc;
+
+                // Break network
+                NeuralNetwork oldNNBreak = survivors.get(i).MyNNBreak;
+                NetworkLayer inputBreak = oldNNBreak.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
+                NetworkLayer hiddenBreak = oldNNBreak.getAllLayers().get(1);
+                NetworkLayer outputBreak = oldNNBreak.getAllLayers().get(2);
+                NeuralNetwork newNNBreak = new NeuralNetwork(inputBreak, hiddenBreak, outputBreak);
+
+                driver.MyNNBreak = oldNNBreak;
+                driver2.MyNNBreak = newNNBreak; */
+
+
+                population.add(driver);
                 population.add(driver2);
 
                 System.out.println("population size: " + population.size());
