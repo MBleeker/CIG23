@@ -1,7 +1,10 @@
 import cicontest.torcs.race.RaceResults;
+import com.sun.xml.internal.ws.api.pipe.SyncStartForAsyncFeature;
+import com.sun.xml.internal.ws.api.streaming.XMLStreamReaderFactory;
 import race.TorcsConfiguration;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -9,6 +12,9 @@ import java.util.*;
 
 import Jama.Matrix;
 import edu.umbc.cs.maple.utils.JamaUtils;
+
+import javax.security.auth.DestroyFailedException;
+
 /**
  * Created by Jörg on 29-11-2015.
  */
@@ -25,7 +31,7 @@ public class EATorcs {
     private static String ACTIVATION_FUNCTION = "tanh";
     private static double LEARNING_RATE = 0.01;
     private static String OUTPUT_DIR = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/";
-    private static int MAX_COMPETITORS = 3;
+    private static int MAX_COMPETITORS = 4;
     private static String TRAININGS_FILE = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/trainNN/train_nn_data_all.dat";
 
     // class variables
@@ -156,8 +162,6 @@ public class EATorcs {
 
     public void runTournament(){
 
-        for (int generation=0; generation < TOTAL_GENERATIONS; generation++) {
-
             DefaultDriver[] drivers = new DefaultDriver[MAX_COMPETITORS];
             this.survivors = new ArrayList<>();
             // this.tt = new Tournament("road", "aalborg", 1);
@@ -173,19 +177,18 @@ public class EATorcs {
                 i++;
                 total++;
                 if (i == MAX_COMPETITORS || (this.population.size() == total )) {
+                    System.out.println("Starting new tournament...");
                     //tt.run(drivers, true);
                     //int[] fitness = this.tt.getResults();
 
                     //this.tt.printResults(); // why are we doing this here??
                     for (int jj=0; jj < drivers.length; jj++){
                         System.out.println(drivers[jj].fitness);
+
                         // parent selection
                         if (drivers[jj].fitness <= MIN_FITNESS) {
                             this.survivors.add(drivers[jj]);
                         }
-
-
-
 
                        // System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + drivers[jj].fitness);
                        // System.out.println("Driver: " + drivers[jj].getDriverName() + " bestLap: " + drivers[jj].bestLap);
@@ -202,27 +205,42 @@ public class EATorcs {
                 //this.survivors = selectParents(drivers, this.survivors);
             }
 
-            this.population = makeNewGeneration(this.survivors);
-        }
-
-
+            makeNewGeneration(this.survivors);
 
     }
 
-    public ArrayList<DefaultDriver> makeNewGeneration(ArrayList<DefaultDriver> survivors) {
-        ArrayList<NeuralNetwork>  newGeneration = new ArrayList<>();
+    public void makeNewGeneration(ArrayList<DefaultDriver> survivors) {
+        System.out.println("Making new generation...");
+        System.out.println("Length survivors: " + survivors.size());
+        DefaultDriver driver;
+        DefaultDriver driver2;
+        //ArrayList<NeuralNetwork>  newGeneration = new ArrayList<>();
+        ArrayList<DefaultDriver> population = new ArrayList<>();
         int family_members = 0;
         for (int i=0; i<survivors.size(); i++) {
-            if (family_members <= GENERATION_SIZE) {
-                System.out.println("no family members: "+family_members);
-                family_members++;
-                NetworkLayer input = survivors.get(i).MyNNSteer.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
-                NetworkLayer hidden = survivors.get(i).MyNNSteer.getAllLayers().get(1);
-                NetworkLayer output = survivors.get(i).MyNNSteer.getAllLayers().get(2);
-                NeuralNetwork newNNSteer = new NeuralNetwork(input, hidden, output);
-                newGeneration.add(survivors.get(i).MyNNSteer);
-                newGeneration.add(newNNSteer);
+            if (family_members < GENERATION_SIZE) {
+                System.out.println("number family members: " + family_members);
 
+                family_members++;
+                NeuralNetwork oldNNSteer = survivors.get(i).MyNNSteer;
+                NetworkLayer input = oldNNSteer.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
+                NetworkLayer hidden = oldNNSteer.getAllLayers().get(1);
+                NetworkLayer output = oldNNSteer.getAllLayers().get(2);
+                NeuralNetwork newNNSteer = new NeuralNetwork(input, hidden, output);
+                //newGeneration.add(oldNNSteer);
+                //newGeneration.add(newNNSteer);
+
+                //population.get(i).MyNNSteer = oldNNSteer;
+                //population.get(i+2).MyNNSteer = newNNSteer; // like this you fill the entire array again with new and old networks
+
+                driver = new DefaultDriver(Integer.toString(i));
+                driver.MyNNSteer = oldNNSteer;
+                population.add(driver);
+                driver2 = new DefaultDriver(Integer.toString(i+1));
+                driver2.MyNNSteer = newNNSteer;
+                population.add(driver2);
+
+                System.out.println("population size: " + population.size());
                 // All testing:
                 /*System.out.println("old nw lr: " + survivors.get(i).MyNNSteer.getLearningRate());
                 System.out.println("new nw lr: " + newNNSteer.getLearningRate());
@@ -230,13 +248,12 @@ public class EATorcs {
                 newNNSteer.setLearningRate(5);
                 System.out.println("old nw lr after adaptation: " + survivors.get(i).MyNNSteer.getLearningRate());
                 System.out.println("new nw lr after adaptation: " + newNNSteer.getLearningRate()); */
-
-
-
             }
         }
+        //this.population.clear();
+        this.population = population;
+        System.out.println("population size at the end: "+ this.population.size());
 
-        return survivors;
     }
 
     /*
