@@ -28,14 +28,31 @@ public class NeuralNetwork implements Serializable {
 	public NeuralNetwork(){
 		
 	}
-	
+
+	public NeuralNetwork(NetworkLayer inputLayer, NetworkLayer hiddenLayer, NetworkLayer outputLayer) {
+		this.inputLayer = inputLayer;
+		this.hiddenLayer = hiddenLayer;
+		this.outputLayer = outputLayer;
+		this.allLayers.add(inputLayer);
+		this.allLayers.add(hiddenLayer);
+		this.allLayers.add(outputLayer);
+		//inputLayer.setWeightMatrix(inputLayer.getWeightMatrix());
+		//hiddenLayer.setWeightMatrix(hiddenLayer.getWeightMatrix());
+		//outputLayer.setWeightMatrix(outputLayer.getWeightMatrix());
+	}
+
 	NetworkLayer inputLayer = null;
 	NetworkLayer outputLayer = null;
+	NetworkLayer hiddenLayer = null;
 	private double learningRate = 0.01; // default value
 	protected List<NetworkLayer> allLayers = new ArrayList<NetworkLayer>();
 
 	public double getLearningRate() {
 		return learningRate;
+	}
+
+	public NeuralNetwork getNN() {
+		return this;
 	}
 
 	public void setLearningRate(double learningRate) {
