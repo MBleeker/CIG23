@@ -17,8 +17,6 @@ import Jama.Matrix;
 
 public class DefaultDriver extends AbstractDriver {
 
-	public double evolutionary_timespan = 1000; // seconds
-
 	public NeuralNetwork MyNNSteer;
 	public NeuralNetwork MyNNAcc; // This network is to be used for acceleration
 	public NeuralNetwork MyNNBreak;
@@ -44,7 +42,6 @@ public class DefaultDriver extends AbstractDriver {
 		this.driverID = ID;
 		this.useNN = true;
 		this.trainNN = false;
-		this.evolutionary_timespan = 10;
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
 		if (this.output_dir == null) {
@@ -56,7 +53,6 @@ public class DefaultDriver extends AbstractDriver {
 
 		this.useNN = true;
 		this.trainNN = false;
-		this.evolutionary_timespan = 1000;
 		// System.out.println("Use NN " + this.useNN);
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
@@ -304,9 +300,6 @@ public class DefaultDriver extends AbstractDriver {
 			}
 		}
 		this.setResults(sensors);
-		if (this.currentLapTime >= this.evolutionary_timespan){
-			action.abandonRace = true;
-		}
 	}
 
 	private void trainNeuralNetwork(Action action, SensorModel sensors) {
@@ -431,7 +424,6 @@ public class DefaultDriver extends AbstractDriver {
 		this.bestLap = sensors.getLastLapTime();
 		this.fitness = sensors.getRacePosition();
 		this.damage = sensors.getDamage();
-		this.currentLapTime = sensors.getCurrentLapTime();
 	}
 
 	private static double[] extendArraySize(double [] array){
