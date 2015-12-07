@@ -1,14 +1,8 @@
-import cicontest.torcs.race.RaceResults;
-import com.sun.xml.internal.ws.api.pipe.SyncStartForAsyncFeature;
-import com.sun.xml.internal.ws.api.streaming.XMLStreamReaderFactory;
 import race.TorcsConfiguration;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.*;
 
 import Jama.Matrix;
 import edu.umbc.cs.maple.utils.JamaUtils;
@@ -52,9 +46,13 @@ public class EATorcs {
 
         this.setInitial_pop_size(pop_size);
         population = new ArrayList<>();
-        this.output_dir = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/";
-        if (output_dir.trim() == "") {
+        this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("training_dir");
+        if (output_dir == null) {
             output_dir = OUTPUT_DIR;
+            TRAININGS_FILE = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/trainNN/train_nn_data_all.dat";
+        }
+        else {
+            TRAININGS_FILE = this.output_dir + "train_nn_data_all.dat";
         }
         this.mem_files = new String[3][pop_size];
     }
@@ -88,70 +86,78 @@ public class EATorcs {
 
     }
 
-    public void loadNetworks(String inFile, String typeNN, Boolean uniSource){
+    public NeuralNetwork cloneNN(String inputFile){
 
-        int i = 1;
-        String abs_path=null;
+        NeuralNetwork new_nn;
+        new_nn = DefaultDriver.loadNN(inputFile);
+        return new_nn;
+    }
+
+    public void unloadNetwork(DefaultDriver dd, String inFile, String typeNN){
+
+        String abs_filepath;
+        abs_filepath = this.output_dir + dd.hashCode() + "_" + inFile;
+
+        switch (typeNN) {
+            case "steering":
+                this.mem_files[0][Integer.parseInt(dd.driverID) - 1] = abs_filepath;
+                dd.storeNN(dd.MyNNSteer, abs_filepath);
+                break;
+            case "accelerate":
+                this.mem_files[1][Integer.parseInt(dd.driverID) - 1] = abs_filepath;
+                dd.storeNN(dd.MyNNAcc, abs_filepath);
+                break;
+        }
+    }
+
+    public void loadNetworks(String inFile, String typeNN, Boolean uniSource){
+        /*
+        Method that is useful to use when initializing the population for the first time;
+         */
+        int i = 0;
+        String abs_filepath;
 
         for (DefaultDriver dd: this.population){
 
-            abs_path = this.output_dir + (uniSource ? "" : (i + "_"))  + inFile;
+            abs_filepath = this.output_dir + (uniSource ? "" : (dd.hashCode() + "_"))  + inFile;
 
             switch (typeNN) {
                 case "steering":
-                    this.mem_files[0][i-1] = this.output_dir + i + "_" + inFile;
-                    dd.MyNNSteer = DefaultDriver.loadNN(abs_path);
+                    this.mem_files[0][i] = this.output_dir + dd.hashCode() + "_" + inFile;
+                    dd.MyNNSteer = DefaultDriver.loadNN(abs_filepath);
                     break;
                 case "accelerate":
                     System.out.println("loading accelerating network");
-                    this.mem_files[1][i-1] = this.output_dir + i + "_" + inFile;
-                    dd.MyNNAcc = DefaultDriver.loadNN(abs_path);
+                    this.mem_files[1][i] = this.output_dir + dd.hashCode() + "_" + inFile;
+                    dd.MyNNAcc = DefaultDriver.loadNN(abs_filepath);
                     break;
                 case "break":
-                    System.out.println("loading braking network");
-                    this.mem_files[1][i-1] = this.output_dir + i + "_" + inFile;
-                    dd.MyNNBreak = DefaultDriver.loadNN(abs_path);
-                    System.out.println("yooo "+ dd.MyNNBreak);
-                    break;
-                case "steeringCopy":
-                    abs_path = abs_path + ".copy";
-                    this.mem_files[3][i-1] = this.output_dir + i + "_" + inFile + ".copy";
-                    dd.MyNNSteer = DefaultDriver.loadNN(abs_path);
+                    this.mem_files[1][i] = this.output_dir + dd.hashCode() + "_" + inFile;
+                    dd.MyNNBreak = DefaultDriver.loadNN(abs_filepath);
                     break;
 
             }
-            System.out.println(i + " mem file " + abs_path);
+            System.out.println((i+1) + " mem file " + abs_filepath);
             i++;
         }
     }
 
-    public void saveNetworks(String typeNN){
+    public void saveNetworks(String typeNN, String inFile){
 
         for (int i=0; i< this.population.size() ; i++){
-           // try {
-                switch (typeNN) {
-                    case "steering":
-                        System.out.println("Save network to " + this.mem_files[0][i]);
-                        population.get(i).storeNN(population.get(i).MyNNSteer, this.mem_files[0][i]);
-                        break;
-                    case "accelerate":
-                        population.get(i).storeNN(population.get(i).MyNNAcc, this.mem_files[1][i]);
-                        break;
-                    case "break":
-                        population.get(i).storeNN(population.get(i).MyNNBreak, this.mem_files[2][i]);
-                        break;
-                    case "steeringCopy":
-                        System.out.println("Save network to " + this.mem_files[3][i]);
-                        this.mem_files[3][i] = this.mem_files[0][i] + ".copy";
-                        population.get(i).storeNN(population.get(i).MyNNSteer, this.mem_files[3][i]);
-                        break;
-                }
-           // }
-           // catch (java.lang.ArrayIndexOutOfBoundsException) {
-                // TODO Auto-generated catch block
-             //   System.out.println("hello");
-          //  }
 
+            String abs_filepath = this.output_dir + i + "_" + inFile;
+            switch (typeNN) {
+                case "steering":
+                    population.get(i).storeNN(population.get(i).MyNNSteer, abs_filepath);
+                    break;
+                case "accelerate":
+                    population.get(i).storeNN(population.get(i).MyNNAcc, abs_filepath);
+                    break;
+                case "break":
+                    population.get(i).storeNN(population.get(i).MyNNBreak, abs_filepath);
+                    break;
+            }
         }
     }
 
@@ -171,15 +177,6 @@ public class EATorcs {
         //this.loadNetworks("break_nn.mem", "break", true);
         this.mutateGenome();
 
-    }
-
-    public void loadAndMutate() {
-        System.out.println("Loading networks...");
-        this.loadNetworks("steering_nn.mem", "steering", true);
-        //this.loadNetworks("acc_nn.mem", "accelerate", true);
-        //this.loadNetworks("break_nn.mem", "break", true);
-        System.out.println("Mutating Genome...");
-        this.mutateGenome();
     }
 
     public void registerFitness(){
@@ -233,7 +230,6 @@ public class EATorcs {
             }
 
             makeNewGeneration(this.survivors);
-
     }
 
     public void makeNewGeneration(ArrayList<DefaultDriver> survivors) {
@@ -244,66 +240,38 @@ public class EATorcs {
         //ArrayList<NeuralNetwork>  newGeneration = new ArrayList<>();
         ArrayList<DefaultDriver> population = new ArrayList<>();
         int family_members = 0;
+
         for (int i=0; i<survivors.size(); i++) {
-            if (family_members < GENERATION_SIZE) {
+            String [] survivor_genome = new String[3];
+            // hold nn-steering file-name of this driver in order to clone the network
+            survivor_genome[0] = this.mem_files[0][Integer.parseInt(survivors.get(i).driverID) - 1];
+            // transfer survivor to new population and change driver ID!
+            survivors.get(i).driverID = Integer.toString(i);
+            population.add(survivors.get(i));
+
+            if (family_members < GENERATION_SIZE) {  // eigenlijk zou die if niet moeten, als we 50% van de parents selcteren
+                // als survivors dan moet iedereen één child krijgen, toch?
                 System.out.println("number family members: " + family_members);
-
                 family_members++;
-                NeuralNetwork oldNNSteer = survivors.get(i).MyNNSteer;
-                NetworkLayer input = oldNNSteer.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
-                NetworkLayer hidden = oldNNSteer.getAllLayers().get(1);
-                NetworkLayer output = oldNNSteer.getAllLayers().get(2);
-                NeuralNetwork newNNSteer = new NeuralNetwork(input, hidden, output);
-                //newGeneration.add(oldNNSteer);
-                //newGeneration.add(newNNSteer);
-
-                //population.get(i).MyNNSteer = oldNNSteer;
-                //population.get(i+2).MyNNSteer = newNNSteer; // like this you fill the entire array again with new and old networks
-
-                driver = new DefaultDriver(Integer.toString(i));
-                driver.MyNNSteer = oldNNSteer;
-
-                driver2 = new DefaultDriver(Integer.toString(i+1));
-                driver2.MyNNSteer = newNNSteer;
-
-
-
-                /*// Acc network
-                NeuralNetwork oldNNAcc = survivors.get(i).MyNNAcc;
-                NetworkLayer inputAcc = oldNNAcc.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
-                NetworkLayer hiddenAcc = oldNNAcc.getAllLayers().get(1);
-                NetworkLayer outputAcc = oldNNAcc.getAllLayers().get(2);
-                NeuralNetwork newNNAcc = new NeuralNetwork(inputAcc, hiddenAcc, outputAcc);
-
-                driver.MyNNAcc = oldNNAcc;
-                driver2.MyNNAcc = newNNAcc;
-
-                // Break network
-                NeuralNetwork oldNNBreak = survivors.get(i).MyNNBreak;
-                NetworkLayer inputBreak = oldNNBreak.getAllLayers().get(0); // ik hoop heel erg dat dit een deep copy is
-                NetworkLayer hiddenBreak = oldNNBreak.getAllLayers().get(1);
-                NetworkLayer outputBreak = oldNNBreak.getAllLayers().get(2);
-                NeuralNetwork newNNBreak = new NeuralNetwork(inputBreak, hiddenBreak, outputBreak);
-
-                driver.MyNNBreak = oldNNBreak;
-                driver2.MyNNBreak = newNNBreak; */
-
-
-                population.add(driver);
-                population.add(driver2);
-
+                // create new driver
+                DefaultDriver dd = new DefaultDriver(Integer.toString(i+1));
+                // clone the NN of the parent, remember we stored that above in the String-array survivor_genome
+                // String array: [0] = Steering NN; [1] = accelerate/brake NN
+                dd.MyNNSteer = this.cloneNN(survivor_genome[0]);
+                population.add(dd);
                 System.out.println("population size: " + population.size());
                 // All testing:
                 /*System.out.println("old nw lr: " + survivors.get(i).MyNNSteer.getLearningRate());
                 System.out.println("new nw lr: " + newNNSteer.getLearningRate());
-
-                newNNSteer.setLearningRate(5);
                 System.out.println("old nw lr after adaptation: " + survivors.get(i).MyNNSteer.getLearningRate());
                 System.out.println("new nw lr after adaptation: " + newNNSteer.getLearningRate()); */
             }
         }
-        //this.population.clear();
+
         this.population = population;
+        // we re-initialize our double String array that stores the file-names of the steering and acc/brake network
+        // files names and locations
+        this.mem_files = new String[3][this.getInitial_pop_size()];
         System.out.println("population size at the end: "+ this.population.size());
 
     }
@@ -438,38 +406,31 @@ public class EATorcs {
                 population.get(i).MyNNSteer = this.addNodeToHiddenLayer(population.get(i).MyNNSteer);
                 this.perturbateWeights(population.get(i).MyNNSteer.outputLayer);
                 double learning_rate_steer = this.mutateLearningRate();
-                saveNetworks("steeringCopy"); // save networks before training
-
                 population.get(i).MyNNSteer = this.trainNetwork(population.get(i).MyNNSteer, learning_rate_steer);
 
                 /*System.out.println("Mutating weights for accelerating network...");
                 population.get(i).MyNNAcc = this.addNodeToHiddenLayer(population.get(i).MyNNAcc);
                 this.perturbateWeights(population.get(i).MyNNAcc.outputLayer);
                 double learning_rate_acc = this.mutateLearningRate();
-                population.get(i).MyNNAcc = this.trainNetworkAcc(population.get(i).MyNNAcc, learning_rate_acc);
-
-                System.out.println("Mutating weights for braking network...");
-                System.out.println(population.get(i).MyNNBreak);
-                population.get(i).MyNNBreak = this.addNodeToHiddenLayer(population.get(i).MyNNBreak);
-                this.perturbateWeights(population.get(i).MyNNBreak.outputLayer);
-                double learning_rate_break = this.mutateLearningRate();
-                population.get(i).MyNNBreak = this.trainNetworkBreak(population.get(i).MyNNBreak, learning_rate_break);*/
+                population.get(i).MyNNAcc = this.trainNetworkAcc(population.get(i).MyNNAcc, learning_rate_acc); */
             }
+            // in any case, save network to file, so that we can clone the original genome later when this is a survivor
+            this.unloadNetwork(population.get(i), "steering_nn.mem", "steering");
         }
 
     }
 
     public static void main(String[] args){
 
-        TorcsConfiguration.getInstance().initialize(new File("C:/Users/Maartje/Documents/Studie/master/ci/project/files/torcs.properties"));
+        TorcsConfiguration.getInstance().initialize(new File("F:\\java\\IdeaProjects\\TorcsController\\out\\production\\torcs.properties"));
         EATorcs EA = new EATorcs(MAX_COMPETITORS);
         EA.initializePopulation();
         for (int i=0; i<=TOTAL_GENERATIONS; i++) {
             System.out.println("generation: " + i);
             EA.runTournament();
-            EA.saveNetworks("steering");
-            EA.loadAndMutate();
+            EA.mutateGenome();
         }
+        EA.saveNetworks("steering", "steering_nn.mem");
         //EA.saveNetworks("accelerate");
         //EA.saveNetworks("break");
     }
