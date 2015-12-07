@@ -4,7 +4,6 @@ import java.util.Arrays;
 
 import cicontest.algorithm.abstracts.AbstractDriver;
 import cicontest.algorithm.abstracts.DriversUtils;
-import cicontest.algorithm.abstracts.map.TrackMap;
 import cicontest.torcs.client.Action;
 import cicontest.torcs.client.SensorModel;
 import cicontest.torcs.controller.extras.*;
@@ -15,9 +14,10 @@ import race.TorcsConfiguration;
 /* Jorg End */
 
 import Jama.Matrix;
-import race.TorcsConfiguration;
 
 public class DefaultDriver extends AbstractDriver {
+
+	public double evolutionary_timespan = 1000; // seconds
 
 	public NeuralNetwork MyNNSteer;
 	public NeuralNetwork MyNNAcc; // This network is to be used for acceleration
@@ -37,16 +37,18 @@ public class DefaultDriver extends AbstractDriver {
 	int fitness = 0;
 	double bestLap;
 	double damage;
+	double currentLapTime;
 
 	public DefaultDriver(String ID){
 
 		this.driverID = ID;
 		this.useNN = true;
 		this.trainNN = false;
+		this.evolutionary_timespan = 10;
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
-		if (output_dir.trim() == "") {
-			output_dir = OUTPUT_DIR;
+		if (this.output_dir == null) {
+			this.output_dir = OUTPUT_DIR;
 		}
 	}
 
@@ -54,11 +56,15 @@ public class DefaultDriver extends AbstractDriver {
 
 		this.useNN = true;
 		this.trainNN = false;
+		this.evolutionary_timespan = 1000;
 		// System.out.println("Use NN " + this.useNN);
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
-		if (output_dir.trim() == "") {
-			output_dir = OUTPUT_DIR;
+		if (this.output_dir == null) {
+			this.output_dir = OUTPUT_DIR;
+		}
+		else {
+			System.out.println("outdir " + this.output_dir);
 		}
 		// this.output_dir = "memory/";
 		// add "output_dir" to torcs_properties file
@@ -298,6 +304,9 @@ public class DefaultDriver extends AbstractDriver {
 			}
 		}
 		this.setResults(sensors);
+		if (this.currentLapTime >= this.evolutionary_timespan){
+			action.abandonRace = true;
+		}
 	}
 
 	private void trainNeuralNetwork(Action action, SensorModel sensors) {
@@ -422,6 +431,7 @@ public class DefaultDriver extends AbstractDriver {
 		this.bestLap = sensors.getLastLapTime();
 		this.fitness = sensors.getRacePosition();
 		this.damage = sensors.getDamage();
+		this.currentLapTime = sensors.getCurrentLapTime();
 	}
 
 	private static double[] extendArraySize(double [] array){
