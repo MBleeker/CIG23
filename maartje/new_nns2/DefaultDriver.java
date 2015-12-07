@@ -179,11 +179,11 @@ public class DefaultDriver extends AbstractDriver {
 
 		// here you can write an if statement --> if you can look ahead for such and such then --> go
 
-		Matrix VectorAcceleration = createNNInputAccelerate(sensors);
-		double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
+		//Matrix VectorAcceleration = createNNInputAccelerate(sensors);
+		//double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
 
-		return pValueAcceleration[0][0];
-		//return 1;
+		//return pValueAcceleration[0][0];
+		return 1;
 	}
 	public double getSteering(SensorModel sensors){
 

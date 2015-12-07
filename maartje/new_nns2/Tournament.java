@@ -38,6 +38,7 @@ public class Tournament  {
 
         for (int i=0; i < driversList.length; i++) {
             race.addCompetitor(driversList[i]);
+            race.closeAfterFinish = true;
             System.out.println("Driver " + driversList[i].getDriverName());
         }
 
