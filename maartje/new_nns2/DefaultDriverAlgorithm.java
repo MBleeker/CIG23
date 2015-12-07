@@ -3,6 +3,7 @@ import cicontest.algorithm.abstracts.AbstractAlgorithm;
 import cicontest.algorithm.abstracts.DriversUtils;
 import cicontest.torcs.client.Controller;
 import cicontest.torcs.controller.Driver;
+import cicontest.torcs.controller.Human;
 import cicontest.torcs.race.Race;
 import cicontest.torcs.race.RaceResults;
 import race.TorcsConfiguration;
@@ -32,6 +33,7 @@ public class DefaultDriverAlgorithm extends AbstractAlgorithm {
             race.setTermination(Race.Termination.LAPS, 1);
             race.setStage(Controller.Stage.RACE);
             race.addCompetitor(new DefaultDriver());
+            race.addCompetitor(new Human());
             Boolean withGUI = true;
             RaceResults results;
             if (withGUI) {

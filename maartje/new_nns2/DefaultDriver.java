@@ -1,4 +1,3 @@
-
 import java.io.*;
 import java.util.Arrays;
 /* Jorg: added some extra classes */
@@ -15,9 +14,10 @@ import race.TorcsConfiguration;
 /* Jorg End */
 
 import Jama.Matrix;
-import race.TorcsConfiguration;
 
 public class DefaultDriver extends AbstractDriver {
+
+	public double evolutionary_timespan = 1000; // seconds
 
 	public NeuralNetwork MyNNSteer;
 	public NeuralNetwork MyNNAcc; // This network is to be used for acceleration
@@ -37,16 +37,18 @@ public class DefaultDriver extends AbstractDriver {
 	int fitness = 0;
 	double bestLap;
 	double damage;
+	double currentLapTime;
 
 	public DefaultDriver(String ID){
 
 		this.driverID = ID;
 		this.useNN = true;
 		this.trainNN = false;
+		this.evolutionary_timespan = 10;
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
-		if (output_dir.trim() == "") {
-			output_dir = OUTPUT_DIR;
+		if (this.output_dir == null) {
+			this.output_dir = OUTPUT_DIR;
 		}
 	}
 
@@ -54,6 +56,7 @@ public class DefaultDriver extends AbstractDriver {
 
 		this.useNN = true;
 		this.trainNN = false;
+		this.evolutionary_timespan = 1000;
 		// System.out.println("Use NN " + this.useNN);
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
@@ -89,12 +92,11 @@ public class DefaultDriver extends AbstractDriver {
 
 		if (this.useNN) {
 			// reuse stored networks
-			System.out.println("Load NN's from memory location " + this.output_dir);
+			System.out.println("Load NN's from memory....");
 			this.MyNNSteer = this.loadNN(this.output_dir + nn_mem_file_steer);
 			this.MyNNAcc = this.loadNN(this.output_dir + nn_mem_file_acc);
 			this.MyNNBreak = this.loadNN(this.output_dir + nn_mem_file_break);
-			System.out.println(Arrays.deepToString(this.MyNNAcc.outputLayer.getWeightMatrix().getArray()));
-			System.out.println("# neurons input layer accelerate NN " + this.MyNNAcc.inputLayer.getNumberOfNeurons());
+			System.out.println(Arrays.deepToString(this.MyNNSteer.outputLayer.getWeightMatrix().getArray()));
 		}
 		else {
 			// if new networks need to be trained
@@ -178,11 +180,10 @@ public class DefaultDriver extends AbstractDriver {
 		// here you can write an if statement --> if you can look ahead for such and such then --> go
 
 		Matrix VectorAcceleration = createNNInputAccelerate(sensors);
-		// System.out.println("Size input acc matrix " + NeuralNetworkUtils.getDimMatrix(VectorAcceleration));
 		double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
 
 		return pValueAcceleration[0][0];
-
+		//return 1;
 	}
 	public double getSteering(SensorModel sensors){
 
@@ -264,36 +265,48 @@ public class DefaultDriver extends AbstractDriver {
 
 				useNeuralNetwork(action, sensors);
 
-				//double force = 0.5;
-				//double evadeforce = 0.5;
 
-				//double[] sensor = sensors.getOpponentSensors();
-				//System.out.println("Sensor to oppponents: " + sensor.toString());
+				double force = 0.5;
+				double evadeforce = 0.5;
 
-				 /*//if (....) {p
-					 DriversUtils du = new DriversUtils();
-					 du.evadeOpponents(action, sensors, this.trackmap, force, evadeforce);
-				 //} */
+				double[] sensor = sensors.getOpponentSensors();
+				System.out.println("Sensor to opponents: " + sensor.toString());
 
-				//System.out.println("Opponents position: " + DriversUtils.getOpponentPosition(action, sensors));
-				//double[] rangeValues = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 7, 10);
-				//System.out.println("range1: " + rangeValues[0] + "range2: " + rangeValues[1] + "range3: " + rangeValues[2]);
+				/*DriversUtils du = new DriversUtils();
+				System.out.println("Evading opponents...");
+				du.evadeOpponents(action, sensors, this.trackmap, force, evadeforce);*/
 
-				/* if (rangeValues[2] > 60)  { //this is only the real front??
+
+
+				//System.out.println("Opponents position distance: " + DriversUtils.getOpponentPosition(action, sensors).distance);
+				//System.out.println("Opponents position x: " + DriversUtils.getOpponentPosition(action, sensors).x);
+				//System.out.println("Opponents position y: " + DriversUtils.getOpponentPosition(action, sensors).y);
+				/*for(int x = 0; x <= 35; ++x) {
+					System.out.println("opponents position: " + sensors.getOpponentSensors()[x]);
+
+				}*/
+				double[] rangeValues = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 7, 10);
+				System.out.println("range1: " + rangeValues[0] + "range2: " + rangeValues[1] + "range3: " + rangeValues[2]);
+
+				if (rangeValues[2] > 60)  { //this is only the real front??
 					System.out.println("large empty part ahead of me");
-					action.accelerate = 1.0D;
+					action.accelerate = 0.5D;
 				}
+
 
 				double[] rangeValuesBrake = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 19);
 				System.out.println("range1: " + rangeValuesBrake[0] + "range2: " + rangeValuesBrake[1] + "range3: " + rangeValuesBrake[16] + "range4: " + (rangeValuesBrake[17]));
-				if ((rangeValuesBrake[0] < 2 && rangeValuesBrake[1] < 2) || (rangeValuesBrake[16] < 2 && rangeValuesBrake[17] < 2) && (rangeValuesBrake[0] > 0 && rangeValuesBrake[1] > 0) && (rangeValuesBrake[16] > 0 && rangeValuesBrake[17] > 0)) {
+				if (((rangeValuesBrake[0] < 0.5 && rangeValuesBrake[1] < 0.5) || (rangeValuesBrake[16] < 0.5 && rangeValuesBrake[17] < 0.5)) && ((rangeValuesBrake[0] > 0 && rangeValuesBrake[1] > 0) && (rangeValuesBrake[16] > 0 && rangeValuesBrake[17] > 0))) {
 					System.out.println("BREAK!!!");
-					action.brake = 0.1D;
+					action.brake = 0.5D;
 				}
-				*/
+
 			}
 		}
 		this.setResults(sensors);
+		if (this.currentLapTime >= this.evolutionary_timespan){
+			action.abandonRace = true;
+		}
 	}
 
 	private void trainNeuralNetwork(Action action, SensorModel sensors) {
@@ -317,35 +330,15 @@ public class DefaultDriver extends AbstractDriver {
 
 	private void useNeuralNetwork(Action action, SensorModel sensors) {
 
-		double psteer;
-		double paccelerate;
-		double pbreak;
-
-		psteer = this.getSteering(sensors);
-		double[] front = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 9, 12);
-		if (front[0] > 50.0 && front[1] > 100 && front[2] > 50) {
-			System.out.println("Keep going...");
-			paccelerate = 1.0;
-			pbreak = 0.0;
-		}
-		else {
-			paccelerate = this.getAcceleration(sensors);
-
-			if (paccelerate < 0) {
-				paccelerate = 0.0;
-				pbreak = (-1) * paccelerate;
-			} else {
-
-				pbreak = 0.0;
-			}
-		}
-		// double pbreak = this.getBreak(sensors);
+		double psteer = this.getSteering(sensors);
+		double paccelerate = this.getAcceleration(sensors);
+		//double pbreak = this.getBreak(sensors);
 		System.out.println("*** USE VALUE FOR Steering using pValue (pred <=> target) " + psteer + " <=> " + action.steering);
 		System.out.println("*** USE VALUE FOR Acceleration using pValue (pred <=> target) " + paccelerate + " <=> " + action.accelerate);
-		System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
+		//System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
 		action.steering = psteer;
 		action.accelerate = paccelerate;
-		action.brake = pbreak;
+		//action.brake = pbreak;
 
 	}
 	// wordt standaard meegegeven
@@ -368,9 +361,7 @@ public class DefaultDriver extends AbstractDriver {
 		Of course also added the steering value itself
 		*/
 
-		// double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
-
-		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // 13 values
+		double[] limVector = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 18); // zijn de 19 waarden die je aanroept --> welke sensor waarden staan in de papers. Wat is zinvolle info?
 		limVector = extendArraySize(limVector);
 		limVector[limVector.length-1] = sensors.getAngleToTrackAxis();
 		limVector = extendArraySize(limVector);
@@ -440,6 +431,7 @@ public class DefaultDriver extends AbstractDriver {
 		this.bestLap = sensors.getLastLapTime();
 		this.fitness = sensors.getRacePosition();
 		this.damage = sensors.getDamage();
+		this.currentLapTime = sensors.getCurrentLapTime();
 	}
 
 	private static double[] extendArraySize(double [] array){

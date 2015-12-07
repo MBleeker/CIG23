@@ -25,13 +25,13 @@ public class EATorcs {
     private static int NUM_OF_INPUT_UNITS = 15;
     private static int NUM_OF_INITIAL_HIDDEN_NODES = 10;
     private static int NUM_OF_OUTPUT_UNITS = 1;
-    private static int MIN_FITNESS = 2; // this is the fitness a driver minally needs to have to pass to the next round. This can change if you want to take damage into account for example
-    private static int TOTAL_GENERATIONS = 2;
-    private static int GENERATION_SIZE = 4; //CHANGE!!
+    private static int MIN_FITNESS = 3; // this is the fitness a driver minally needs to have to pass to the next round. This can change if you want to take damage into account for example
+    private static int TOTAL_GENERATIONS = 8;
+    private static int GENERATION_SIZE = 6; //CHANGE!!
     private static String ACTIVATION_FUNCTION = "tanh";
     private static double LEARNING_RATE = 0.01;
     private static String OUTPUT_DIR = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/";
-    private static int MAX_COMPETITORS = 4;
+    private static int MAX_COMPETITORS = 6;
     private static String TRAININGS_FILE = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/trainNN/train_nn_data_all.dat";
 
     // class variables
@@ -56,7 +56,7 @@ public class EATorcs {
         if (output_dir.trim() == "") {
             output_dir = OUTPUT_DIR;
         }
-        this.mem_files = new String[2][pop_size];
+        this.mem_files = new String[3][pop_size];
     }
 
     public int getInitial_pop_size() {
@@ -113,6 +113,12 @@ public class EATorcs {
                     dd.MyNNBreak = DefaultDriver.loadNN(abs_path);
                     System.out.println("yooo "+ dd.MyNNBreak);
                     break;
+                case "steeringCopy":
+                    abs_path = abs_path + ".copy";
+                    this.mem_files[3][i-1] = this.output_dir + i + "_" + inFile + ".copy";
+                    dd.MyNNSteer = DefaultDriver.loadNN(abs_path);
+                    break;
+
             }
             System.out.println(i + " mem file " + abs_path);
             i++;
@@ -122,18 +128,30 @@ public class EATorcs {
     public void saveNetworks(String typeNN){
 
         for (int i=0; i< this.population.size() ; i++){
-            switch (typeNN) {
-                case "steering":
-                    System.out.println("Save network to " + this.mem_files[0][i]);
-                    population.get(i).storeNN(population.get(i).MyNNSteer, this.mem_files[0][i]);
-                    break;
-                case "accelerate":
-                    population.get(i).storeNN(population.get(i).MyNNAcc, this.mem_files[1][i]);
-                    break;
-                case "break":
-                    population.get(i).storeNN(population.get(i).MyNNBreak, this.mem_files[1][i]);
-                    break;
-            }
+           // try {
+                switch (typeNN) {
+                    case "steering":
+                        System.out.println("Save network to " + this.mem_files[0][i]);
+                        population.get(i).storeNN(population.get(i).MyNNSteer, this.mem_files[0][i]);
+                        break;
+                    case "accelerate":
+                        population.get(i).storeNN(population.get(i).MyNNAcc, this.mem_files[1][i]);
+                        break;
+                    case "break":
+                        population.get(i).storeNN(population.get(i).MyNNBreak, this.mem_files[2][i]);
+                        break;
+                    case "steeringCopy":
+                        System.out.println("Save network to " + this.mem_files[3][i]);
+                        this.mem_files[3][i] = this.mem_files[0][i] + ".copy";
+                        population.get(i).storeNN(population.get(i).MyNNSteer, this.mem_files[3][i]);
+                        break;
+                }
+           // }
+           // catch (java.lang.ArrayIndexOutOfBoundsException) {
+                // TODO Auto-generated catch block
+             //   System.out.println("hello");
+          //  }
+
         }
     }
 
@@ -416,9 +434,12 @@ public class EATorcs {
                 System.out.println("Mutate weights for driver " + population.get(i).getDriverName());
                 // population.get(i).MyNNSteer.outputLayer.setWeightMatrix(this.perturbateWeights( population.get(i).MyNNSteer.outputLayer.getWeightMatrix()));
                 System.out.println("Mutating weights for steering network...");
+
                 population.get(i).MyNNSteer = this.addNodeToHiddenLayer(population.get(i).MyNNSteer);
                 this.perturbateWeights(population.get(i).MyNNSteer.outputLayer);
                 double learning_rate_steer = this.mutateLearningRate();
+                saveNetworks("steeringCopy"); // save networks before training
+
                 population.get(i).MyNNSteer = this.trainNetwork(population.get(i).MyNNSteer, learning_rate_steer);
 
                 /*System.out.println("Mutating weights for accelerating network...");
