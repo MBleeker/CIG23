@@ -17,7 +17,7 @@ import Jama.Matrix;
 
 public class DefaultDriver extends AbstractDriver {
 
-	public double evolutionary_timespan = 1000; // seconds
+	public double evolutionary_timespan = 3600; // seconds
 
 	public NeuralNetwork MyNNSteer;
 	public NeuralNetwork MyNNAcc; // This network is to be used for acceleration
@@ -39,12 +39,12 @@ public class DefaultDriver extends AbstractDriver {
 	double damage;
 	double currentLapTime;
 
-	public DefaultDriver(String ID){
+	public DefaultDriver(String ID, double etimespan){
 
 		this.driverID = ID;
 		this.useNN = true;
 		this.trainNN = false;
-		this.evolutionary_timespan = 10; // sec --> 60
+		this.evolutionary_timespan = etimespan; // sec --> 60
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
 		if (this.output_dir == null) {
@@ -56,8 +56,7 @@ public class DefaultDriver extends AbstractDriver {
 
 		this.useNN = true;
 		this.trainNN = false;
-		this.evolutionary_timespan = 1000;
-		// System.out.println("Use NN " + this.useNN);
+		this.evolutionary_timespan = 3600;
 		this.initialize();
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
 		if (this.output_dir == null) {
@@ -96,7 +95,7 @@ public class DefaultDriver extends AbstractDriver {
 			this.MyNNSteer = this.loadNN(this.output_dir + nn_mem_file_steer);
 			this.MyNNAcc = this.loadNN(this.output_dir + nn_mem_file_acc);
 			//this.MyNNBreak = this.loadNN(this.output_dir + nn_mem_file_break);
-			System.out.println(Arrays.deepToString(this.MyNNSteer.outputLayer.getWeightMatrix().getArray()));
+			//System.out.println(Arrays.deepToString(this.MyNNSteer.outputLayer.getWeightMatrix().getArray()));
 		}
 		else {
 			// if new networks need to be trained
@@ -183,7 +182,7 @@ public class DefaultDriver extends AbstractDriver {
 		double[][] pValueAcceleration = MyNNAcc.processInput(VectorAcceleration).getArray();
 
 		return pValueAcceleration[0][0];
-		//return 1;
+
 	}
 	public double getSteering(SensorModel sensors){
 
@@ -248,11 +247,6 @@ public class DefaultDriver extends AbstractDriver {
 			logSensorAction(action, sensors);
 		}
 
-		// action = this.auxDriver.aux_control(sensors);
-		// System.out.println(action.steering +"steering");
-		// System.out.println(action.accelerate + "acceleration");
-		// System.out.println(action.brake + "brake");
-		// if in training or retrain mode
 		if (this.trainNN) {
 			this.trainNeuralNetwork(action, sensors);
 		}
@@ -297,7 +291,7 @@ public class DefaultDriver extends AbstractDriver {
 				double[] rangeValuesBrake = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 1, 19);
 				//System.out.println("range1: " + rangeValuesBrake[0] + "range2: " + rangeValuesBrake[1] + "range3: " + rangeValuesBrake[16] + "range4: " + (rangeValuesBrake[17]));
 				if (((rangeValuesBrake[0] < 0.5 && rangeValuesBrake[1] < 0.5) || (rangeValuesBrake[16] < 0.5 && rangeValuesBrake[17] < 0.5)) && ((rangeValuesBrake[0] > 0 && rangeValuesBrake[1] > 0) && (rangeValuesBrake[16] > 0 && rangeValuesBrake[17] > 0))) {
-					System.out.println("BREAK!!!");
+					// System.out.println("BREAK!!!");
 					action.brake = 0.5D;
 				}
 

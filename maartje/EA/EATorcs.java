@@ -17,17 +17,17 @@ import javax.security.auth.DestroyFailedException;
 public class EATorcs {
 
     // constants
-    private static int NUM_OF_INPUT_UNITS = 15;
-    private static int NUM_OF_INITIAL_HIDDEN_NODES = 10;
-    private static int NUM_OF_OUTPUT_UNITS = 1;
-    private static int MIN_FITNESS = 1; // this is the fitness a driver minally needs to have to pass to the next round. This can change if you want to take damage into account for example
+    private static double EVOL_TIME_SPAN = 10; // in seconds, how much time does an individual have the time to show his/her performance?
+    private static int MIN_FITNESS = 1; // this is the fitness a driver minimally needs to have to pass to the next round. This can change if you want to take damage into account for example
     private static int TOTAL_GENERATIONS = 3;
     private static int POPULATION_SIZE = 4;
     private static String ACTIVATION_FUNCTION = "tanh";
     private static double LEARNING_RATE = 0.01;
     private static String OUTPUT_DIR = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/out/";
-    private static int MAX_COMPETITORS = 2;
+    private static int MAX_COMPETITORS = 2;  // must be a value that is dividable by 2 without residual value
     private static String TRAININGS_FILE = "C:/Users/Maartje/Documents/Studie/master/ci/project/files/trainNN/train_nn_data_all.dat";
+    private static String STEERING_MEM_FILE = "steering_nn.mem";
+    private static String ACC_MEM_FILE = "acc_nn.mem";
 
     // class variables
     private double prob_mu_genome = 0.6;
@@ -62,7 +62,7 @@ public class EATorcs {
         else {
             TRAININGS_FILE = this.output_dir + "train_nn_data_all.dat";
         }
-        this.mem_files = new String[3][pop_size];
+        this.mem_files = new String[2][pop_size];
     }
 
     public int getInitial_pop_size() {
@@ -139,11 +139,6 @@ public class EATorcs {
                     this.mem_files[1][i] = this.output_dir + dd.hashCode() + "_" + inFile;
                     dd.MyNNAcc = DefaultDriver.loadNN(abs_filepath);
                     break;
-                case "break":
-                    this.mem_files[1][i] = this.output_dir + dd.hashCode() + "_" + inFile;
-                    dd.MyNNBreak = DefaultDriver.loadNN(abs_filepath);
-                    break;
-
             }
             System.out.println((i+1) + " mem file " + abs_filepath);
             i++;
@@ -153,17 +148,14 @@ public class EATorcs {
     public void saveNetworks(String typeNN, String inFile){
 
         for (int i=0; i< this.population.size() ; i++){
-
-            String abs_filepath = this.output_dir + i + "_" + inFile;
+            System.out.println("Storing the final networks in " + this.output_dir);
+            String abs_filepath = this.output_dir + (i+1) + "_" + inFile;
             switch (typeNN) {
                 case "steering":
                     population.get(i).storeNN(population.get(i).MyNNSteer, abs_filepath);
                     break;
                 case "accelerate":
                     population.get(i).storeNN(population.get(i).MyNNAcc, abs_filepath);
-                    break;
-                case "break":
-                    population.get(i).storeNN(population.get(i).MyNNBreak, abs_filepath);
                     break;
             }
         }
@@ -175,71 +167,67 @@ public class EATorcs {
         DefaultDriver driver;
 
         for (int i = 0; i < initial_pop_size; i++){
-            driver = new DefaultDriver(Integer.toString(i+1));
-            // driver.MyNNSteer = this.buildNetwork(NUM_OF_INPUT_UNITS, NUM_OF_INITIAL_HIDDEN_NODES, NUM_OF_OUTPUT_UNITS, ACTIVATION_FUNCTION, LEARNING_RATE);
-            // driver.MyNNAcc = this.buildNetwork(NUM_OF_INPUT_UNITS, NUM_OF_INITIAL_HIDDEN_NODES, NUM_OF_OUTPUT_UNITS, ACTIVATION_FUNCTION, LEARNING_RATE);
+            driver = new DefaultDriver(Integer.toString(i+1), EVOL_TIME_SPAN);
             this.population.add(driver);
         }
-        this.loadNetworks("steering_nn.mem", "steering", true);
-        this.loadNetworks("acc_nn.mem", "accelerate", true);
-        //this.loadNetworks("break_nn.mem", "break", true);
+        this.loadNetworks(STEERING_MEM_FILE, "steering", true);
+        this.loadNetworks(ACC_MEM_FILE, "accelerate", true);
         this.mutateGenome();
-
-    }
-
-    public void registerFitness(){
-
 
     }
 
     public void runTournament(){
 
-            DefaultDriver[] drivers = new DefaultDriver[MAX_COMPETITORS];
-            this.survivors = new ArrayList<>();
-            // this.tt = new Tournament("road", "aalborg", 1);
-            this.tt = new Tournament("dirt-1", "dirt", 1);
-            Collections.shuffle(this.population);
+        DefaultDriver[] drivers = new DefaultDriver[MAX_COMPETITORS];
+        this.survivors = new ArrayList<>();
+        // this.tt = new Tournament("road", "aalborg", 1);
+        this.tt = new Tournament("dirt-1", "dirt", 1);
+        Collections.shuffle(this.population);
+        int min_fitness_value = MAX_COMPETITORS / 2;  // we assume that MAX_COMPETITORS is a value dividable by 2 without residual value
 
-            int i = 0;
-            int total = 0;
-            for (int j = 0; j < this.population.size(); j++) {
-                drivers[i] = this.population.get(j);
-                //drivers[i].fitness = i+1; // for testing!!!!
-                i++;
-                total++;
-                System.out.println("i = " + i + " - total " + total);
-                if (i == MAX_COMPETITORS || (this.population.size() == total )) {
-                    System.out.println("Starting new tournament...");
-                    tt.run(drivers, true);
-                    int[] fitness = this.tt.getResults();
+        int i = 0;
+        int total = 0;
+        for (int j = 0; j < this.population.size(); j++) {
+            drivers[i] = this.population.get(j);
+            //drivers[i].fitness = i+1; // for testing!!!!
+            i++;
+            total++;
+            System.out.println("i = " + i + " - total " + total);
+            if (i == MAX_COMPETITORS || (this.population.size() == total )) {
+                System.out.println("Starting new tournament...");
+                tt.run(drivers, true);
+                int[] fitness = this.tt.getResults();
 
-                    //this.tt.printResults(); // why are we doing this here??
-                    for (int jj=0; jj < drivers.length; jj++){
-                        System.out.println(drivers[jj].fitness);
+                //this.tt.printResults(); // why are we doing this here??
+                for (int jj=0; jj < drivers.length; jj++){
+                    System.out.println(drivers[jj].fitness);
 
-                        // parent selection
-                        if (drivers[jj].fitness <= MIN_FITNESS) {
-                            this.survivors.add(drivers[jj]);
-                        }
-
-                       // System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + drivers[jj].fitness);
-                       // System.out.println("Driver: " + drivers[jj].getDriverName() + " bestLap: " + drivers[jj].bestLap);
+                    // parent selection
+                    if (drivers[jj].fitness <= min_fitness_value) {
+                        this.survivors.add(drivers[jj]);
                     }
-                    i = 0;
-                    if ( this.population.size() - total < MAX_COMPETITORS ) {
 
+                   // System.out.println("Driver: " + drivers[jj].getDriverName() + " fitness: " + drivers[jj].fitness);
+                   // System.out.println("Driver: " + drivers[jj].getDriverName() + " bestLap: " + drivers[jj].bestLap);
+                }
+                i = 0;
+                if ( this.population.size() - total < MAX_COMPETITORS ) {
+                    if (this.population.size() - total == 0) {
+                        System.out.println("All tournaments finished, create new generation");
+                    }
+                    else {
                         System.out.println("Last tournament with " + (this.population.size() - total) + " drivers.");
                         drivers = new DefaultDriver[this.population.size() - total];
-                    } else {
-                        System.out.println("Next tournament with " + (this.population.size() - total) + " drivers.");
-                        drivers = new DefaultDriver[MAX_COMPETITORS];
                     }
+                } else {
+                    System.out.println("Next tournament with " + (this.population.size() - total) + " drivers.");
+                    drivers = new DefaultDriver[MAX_COMPETITORS];
                 }
-
-                //this.survivors = selectParents(drivers, this.survivors);
             }
 
-            makeNewGeneration(this.survivors);
+        }
+
+        makeNewGeneration(this.survivors);
     }
 
     public void makeNewGeneration(ArrayList<DefaultDriver> survivors) {
@@ -268,7 +256,7 @@ public class EATorcs {
                 System.out.println("number family members: " + family_members);
                 family_members++;
                 // create new driver
-                DefaultDriver dd = new DefaultDriver(Integer.toString(child_count+1));
+                DefaultDriver dd = new DefaultDriver(Integer.toString(child_count+1), EVOL_TIME_SPAN);
                 child_count++;
                 // clone the NN of the parent, remember we stored that above in the String-array survivor_genome
                 // String array: [0] = Steering NN; [1] = accelerate/brake NN
@@ -290,27 +278,10 @@ public class EATorcs {
         this.population = population;
         // we re-initialize our double String array that stores the file-names of the steering and acc/brake network
         // files names and locations
-        this.mem_files = new String[3][this.getInitial_pop_size()];
+        this.mem_files = new String[2][this.getInitial_pop_size()];
         System.out.println("population size at the end: "+ this.population.size());
 
     }
-
-    /*
-     * Input:   all drivers of the tournament
-     *          After one round tournament this method is called. It selects the best parents, based on the outcome of one round
-     */
-    /*public ArrayList selectParents(DefaultDriver[] drivers, ArrayList survivors) {
-
-        System.out.println("drivers: " + drivers);
-        System.out.println("survivors: " + survivors);
-        int no_drivers = drivers.length;
-        for (int driver=0; driver<no_drivers; driver++) {
-            if (drivers[driver].fitness <= MIN_FITNESS) {
-                survivors.add(drivers[driver]);
-            }
-        }
-        return survivors;
-    } */
 
     public NeuralNetwork trainNetwork(NeuralNetwork nn, double learning_rate){
 
@@ -420,36 +391,32 @@ public class EATorcs {
             if (Math.random() < prob_mu_genome) {
                 System.out.println("Mutate weights for driver " + population.get(i).getDriverName());
                 // population.get(i).MyNNSteer.outputLayer.setWeightMatrix(this.perturbateWeights( population.get(i).MyNNSteer.outputLayer.getWeightMatrix()));
-                System.out.println("Mutating weights for steering network...");
-
+                //System.out.println("Mutating weights for steering network...");
                 population.get(i).MyNNSteer = this.addNodeToHiddenLayer(population.get(i).MyNNSteer);
-
                 int layerLen = population.get(i).MyNNSteer.getAllLayers().get(1).getNumberOfNeurons(); // get hidden layer, number of neurons
                 Random randomno = new Random();
                 double std = Math.exp((randomno.nextGaussian()/Math.sqrt(layerLen)));
-                System.out.println("NEW STANDARD DEVIATION: " + std);
-
                 this.perturbateWeights(population.get(i).MyNNSteer.outputLayer, std);
                 double learning_rate_steer = this.mutateLearningRate(std);
-                this.unloadNetwork(population.get(i), "steering_nn.mem", "steering");
+                this.unloadNetwork(population.get(i), STEERING_MEM_FILE, "steering");
                 population.get(i).MyNNSteer = this.trainNetwork(population.get(i).MyNNSteer, learning_rate_steer);
 
-                System.out.println("Mutating weights for accelerating network...");
+                //System.out.println("Mutating weights for accelerating network...");
 
                 int layerLenAcc = population.get(i).MyNNAcc.getAllLayers().get(1).getNumberOfNeurons(); // get hidden layer, number of neurons
                 Random randomnoAcc = new Random();
                 double stdAcc = Math.exp((randomnoAcc.nextGaussian()/Math.sqrt(layerLenAcc)));
-                System.out.println("NEW STANDARD DEVIATION ACC: " + stdAcc);
+                //System.out.println("NEW STANDARD DEVIATION ACC: " + stdAcc);
 
                 population.get(i).MyNNAcc = this.addNodeToHiddenLayer(population.get(i).MyNNAcc);
                 this.perturbateWeights(population.get(i).MyNNAcc.outputLayer, stdAcc);
                 double learning_rate_acc = this.mutateLearningRate(stdAcc);
-                this.unloadNetwork(population.get(i), "acc_nn.mem", "accelerate");
+                this.unloadNetwork(population.get(i), ACC_MEM_FILE, "accelerate");
                 population.get(i).MyNNAcc = this.trainNetworkAcc(population.get(i).MyNNAcc, learning_rate_acc);
 
             } else {
-                this.unloadNetwork(population.get(i), "steering_nn.mem", "steering");
-                this.unloadNetwork(population.get(i), "acc_nn.mem", "accelerate");
+                this.unloadNetwork(population.get(i), STEERING_MEM_FILE, "steering");
+                this.unloadNetwork(population.get(i), ACC_MEM_FILE, "accelerate");
             }
             // in any case, save network to file, so that we can clone the original genome later when this is a survivor
 
@@ -461,7 +428,7 @@ public class EATorcs {
 
         //Random randomno = new Random();
         //System.out.println(randomno.nextGaussian());
-        TorcsConfiguration.getInstance().initialize(new File("C:/Users/Maartje/Documents/Studie/master/ci/project/files/torcs.properties"));
+        TorcsConfiguration.getInstance().initialize(new File("F:\\java\\IdeaProjects\\TorcsController\\out\\production\\torcs.properties"));
         EATorcs EA = new EATorcs(POPULATION_SIZE);
         EA.initializePopulation();
         for (int i=0; i<=TOTAL_GENERATIONS; i++) {
@@ -469,9 +436,9 @@ public class EATorcs {
             EA.runTournament();
             EA.mutateGenome();
         }
-        EA.saveNetworks("steering", "steering_nn.mem");
-        EA.saveNetworks("accelerate", "acc_nn.mem");
-        //EA.saveNetworks("break");
+        EA.saveNetworks("steering", STEERING_MEM_FILE);
+        EA.saveNetworks("accelerate", ACC_MEM_FILE);
+
     }
 
 }

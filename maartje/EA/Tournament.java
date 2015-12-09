@@ -47,19 +47,12 @@ public class Tournament  {
         }  else {
             results = race.run();
         }
-        // race.waitforFinish();
-        // race.updatePositions();
 
     }
 
     public void setTrack(String type, String track){
 
         this.race.setTrack(type, track);
-    }
-
-    public void setTermination(int laps){
-
-        this.race.setTermination(Race.Termination.LAPS, laps);
     }
 
     public int[] getResults(){
