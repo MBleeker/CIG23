@@ -259,30 +259,10 @@ public class DefaultDriver extends AbstractDriver {
 
 				useNeuralNetwork(action, sensors);
 
-
-				double force = 0.5;
-				double evadeforce = 0.5;
-
-				double[] sensor = sensors.getOpponentSensors();
-				//System.out.println("Sensor to opponents: " + sensor.toString());
-
-				/*DriversUtils du = new DriversUtils();
-				System.out.println("Evading opponents...");
-				du.evadeOpponents(action, sensors, this.trackmap, force, evadeforce);*/
-
-
-
-				//System.out.println("Opponents position distance: " + DriversUtils.getOpponentPosition(action, sensors).distance);
-				//System.out.println("Opponents position x: " + DriversUtils.getOpponentPosition(action, sensors).x);
-				//System.out.println("Opponents position y: " + DriversUtils.getOpponentPosition(action, sensors).y);
-				/*for(int x = 0; x <= 35; ++x) {
-					System.out.println("opponents position: " + sensors.getOpponentSensors()[x]);
-
-				}*/
 				double[] rangeValues = Arrays.copyOfRange(sensors.getTrackEdgeSensors(), 7, 10);
 				//System.out.println("range1: " + rangeValues[0] + "range2: " + rangeValues[1] + "range3: " + rangeValues[2]);
 
-				if (rangeValues[2] > 60)  { //this is only the real front??
+				if (rangeValues[2] > 60 && sensors.getSpeed() < 90.0D)  { //this is only the real front??
 					//System.out.println("large empty part ahead of me");
 					action.accelerate = 0.5D;
 				}
@@ -331,7 +311,7 @@ public class DefaultDriver extends AbstractDriver {
 		//System.out.println("*** USE VALUE FOR Acceleration using pValue (pred <=> target) " + paccelerate + " <=> " + action.accelerate);
 		//System.out.println("*** USE VALUE FOR Brake using pValue (pred <=> target) " + pbreak + " <=> " + action.brake);
 		action.steering = psteer;
-		action.accelerate = paccelerate;
+		// action.accelerate = paccelerate;
 		//action.brake = pbreak;
 
 	}
