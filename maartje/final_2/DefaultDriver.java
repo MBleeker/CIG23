@@ -35,6 +35,9 @@ public class DefaultDriver extends AbstractDriver {
 	double bestLap;
 	double damage;
 	double currentLapTime;
+	Boolean keyTracking;
+	KeyTracker keyTrack;
+	Double currentSteering;
 
 	public DefaultDriver(String ID, double etimespan){
 
@@ -47,14 +50,21 @@ public class DefaultDriver extends AbstractDriver {
 		if (this.output_dir == null) {
 			this.output_dir = OUTPUT_DIR;
 		}
+		if (this.keyTracking) {
+			this.keyTrack = new KeyTracker("Key Listener Tester");
+		}
 	}
 
 	public DefaultDriver() {
-
+        this.currentSteering = 0.0;
 		this.useNN = true;
 		this.trainNN = false;
 		this.evolutionary_timespan = 3600;
 		this.initialize();
+		this.keyTracking = false;
+		if (this.keyTracking) {
+			this.keyTrack = new KeyTracker("Key Listener Tester");
+		}
 		this.output_dir = TorcsConfiguration.getInstance().getOptionalProperty("output_dir");
 		if (this.output_dir == null) {
 			this.output_dir = OUTPUT_DIR;
@@ -199,25 +209,27 @@ public class DefaultDriver extends AbstractDriver {
 
 	public void control(Action action, SensorModel sensors) {
 
-		action.steering = DriversUtils.alignToTrackAxis(sensors, 0.5);
-		if(sensors.getSpeed() > 60.0D) {
-			action.accelerate = 0.0D;
-			action.brake = 0.0D;
-		}
+		if(!this.keyTracking){
+			action.steering = DriversUtils.alignToTrackAxis(sensors, 0.5);
+			if(sensors.getSpeed() > 60.0D) {
+				action.accelerate = 0.0D;
+				action.brake = 0.0D;
+			}
 
-		if(sensors.getSpeed() > 70.0D) {
-			action.accelerate = 0.0D;
-			action.brake = -1.0D;
-		}
+			if(sensors.getSpeed() > 70.0D) {
+				action.accelerate = 0.0D;
+				action.brake = -1.0D;
+			}
 
-		if(sensors.getSpeed() <= 60.0D) {
-			action.accelerate = (80.0D - sensors.getSpeed()) / 80.0D;
-			action.brake = 0.0D;
-		}
+			if(sensors.getSpeed() <= 60.0D) {
+				action.accelerate = (80.0D - sensors.getSpeed()) / 80.0D;
+				action.brake = 0.0D;
+			}
 
-		if(sensors.getSpeed() < 30.0D) {
-			action.accelerate = 1.0D;
-			action.brake = 0.0D;
+			if(sensors.getSpeed() < 30.0D) {
+				action.accelerate = 1.0D;
+				action.brake = 0.0D;
+			}
 		}
 
 		if (logData) {
@@ -246,6 +258,32 @@ public class DefaultDriver extends AbstractDriver {
 				}
 
 			}
+		}
+		if(this.keyTracking){
+			if (this.keyTrack.getRightSteering() == 1) {
+				this.currentSteering += 0.25;
+				action.steering = this.currentSteering  ;
+			}
+			else if (this.keyTrack.getLeftSteering() == 1) {
+				this.currentSteering -= 0.25;
+					action.steering = this.currentSteering  ;
+			} 
+			else {
+				this.currentSteering = 0.0;
+			}			
+			if(this.keyTrack.accelerate() == 1){
+				action.accelerate = 1.0D;
+				action.brake = 0.0D;
+			}
+			else if(this.keyTrack.doBreake() == 1){
+				action.accelerate = 0.0D;
+				action.brake = 1.0D;					
+			}
+			else{
+				action.accelerate = 0.0D;
+				action.brake = 0.0D;
+			}
+				
 		}
 		this.setResults(sensors);
 		if (this.currentLapTime >= this.evolutionary_timespan){
