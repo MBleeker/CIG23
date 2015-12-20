@@ -1,0 +1,14 @@
+The following class files were used for the Neural Network implementation:
+1) NetworkLayer.java
+2) NeuralNetwork.java
+3) BackProp.java
+4) BackPropLayer.java
+5) BoundNumbers.java
+
+The following class files were used for the Evolutionary Strategy:
+1) EATorcs.java
+2) Tournament.java
+
+The following class files where used for the NN training:
+1) NeuralNetWorks.java
+2) NeuralNetworkUtils.java
